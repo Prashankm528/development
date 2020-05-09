@@ -1,0 +1,100 @@
+<template>
+    <div class="app slds-p-around_x-large">
+       <div class="slds-align_absolute-center" style="height:5rem">
+       
+            <h1>Search your city,resources, etc</h1>
+       </div> 
+        <div class="slds-align_absolute-center">
+            <lightning-input type="search"
+                    style="width: 50em;"
+					onchange={handleSearchTermChange}
+					variant="label-hidden"
+					class="slds-m-bottom_small"
+					label="Search"
+					placeholder="Search for City"
+					value={searchTerm}>
+                </lightning-input>
+        </div>
+        <div class="slds-align_absolute-center">
+             {getTime}
+            
+        </div>
+        <div class="slds-align_absolute-center">
+        <lightning-layout>
+            <lightning-layout-item padding="around-small">
+                <div class="header-column1">
+                    <p class="field-title" title="Confirmed">Confirmed</p>
+                    <p>allData[0].state</p>
+                </div>
+            </lightning-layout-item>
+            <lightning-layout-item padding="around-small">
+                <div class="header-column2">
+                    <p class="field-title" title="Active">Active</p>
+                    <p>{active}</p>
+                </div>
+            </lightning-layout-item>
+            <lightning-layout-item padding="around-small">
+                <div class="header-column3">
+                    <p class="field-title" title="Recovered">Confirmed</p>
+                    <p>{confirmed}</p>
+                </div>
+            </lightning-layout-item>
+            <lightning-layout-item padding="around-small">
+                <div class="header-column4">
+                    <p class="field-title" title="Death">Death</p>
+                    <p>allData[0].death</p>
+                </div>
+            </lightning-layout-item>
+        </lightning-layout>
+    </div>
+        <div class="slds-align_absolute-center">
+           
+       <table class="slds-table slds-table_cell-buffer slds-table_bordered">
+          
+            <thead>
+                <tr >
+                    <th class="" scope="col">
+                        <div class="slds-truncate" title=""></div>
+                    </th>
+                    <th class="" scope="col">
+                        <div class="slds-truncate" title="State">State</div>
+                    </th>
+                    <th class="" scope="col">
+                        <div class="slds-truncate" title="Confirmed">Confirmed</div>
+                    </th>
+                    <th class="" scope="col">
+                        <div class="slds-truncate" title="Active">Active</div>
+                    </th>
+                   
+                    <th class="" scope="col">
+                        <div class="slds-truncate" title="Deceased">Deceased</div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <template for:each={allData} for:item="dat" for:index="index">
+                    <tr key={dat.state}>
+                        <td >
+                            <div><lightning-button-icon key={index} onclick={toggle} icon-name={iconShow}  ></lightning-button-icon> </div>
+                        </td>
+                        <td >
+                            <div>{dat.state}</div>
+                        </td>
+                        <td >
+                            <div>{dat.active}</div>
+                        </td>
+                        <td >
+                            <div>{dat.confirmed}</div>
+                        </td>
+                        <td >
+                            <div>{dat.death}</div>
+                        </td>
+
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+        </div>
+    </div>  
+    
+</template>
