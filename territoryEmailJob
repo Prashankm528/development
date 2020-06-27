@@ -1,0 +1,119 @@
+/****************************************************************
+* Author          :  Prashank Varshney
+* Created Date    :  20 may 2020
+* Class Name      :  FinalTCRTerritoryEmailJob
+* Summary         :  Scheduling Email Template for Final TCRs  based on Territory permission users 
+* Purpose         :  Send a single email to each Territory Permission user based on Territory(COES-3573)
+********************************************************************************************************************************************************/            
+
+
+
+public with sharing class FinalTCRTerritoryEmailJob implements Database.Batchable<sObject> {
+	
+	public Database.QueryLocator start(Database.BatchableContext BC){  
+		// Fetching all the active territory
+		string query = 'SELECT Id, Reporting_Territory__c FROM Territory__c WHERE Active_Flag__c = true and Reporting_Territory__c = true';                                                         
+        return Database.getQueryLocator(query);								   
+	}
+	
+	public void execute(Database.BatchableContext BC, List<Territory__c> teritoryList) { 
+		// creating map to associate territory permission user email to its belonging territory 
+		map<Id,list<string>> terPermissionMap = new  map<Id,list<string>>();
+		// creating map to pair the release record belonging to territory
+		map<Id,list<Release__c>> terReleaseMap = new  map<Id,list<Release__c>>();
+		set<Id> setOfTerritoryId = new set<Id>();
+        
+		for(Territory__c terr: teritoryList){
+          setOfTerritoryId.add(terr.Id);
+        }
+		// itrating over territory permission  based on the active territory
+		for(Territory_Permission__c pr : [SELECT Id,User__r.Email,Territory__c, TCR_Approval_Notification__c
+										  FROM Territory_Permission__c WHERE Territory__c IN:setOfTerritoryId AND 
+										  TCR_Approval_Notification__c = true AND User__r.IsActive = true] ){	
+                                              
+                                              
+			if(terPermissionMap.containsKey(pr.Territory__c)){
+				terPermissionMap.get(pr.Territory__c).add(pr.User__r.email);
+			}else{			
+			   list<string> userIdList = new list<string>();
+			   userIdList.add(pr.User__r.email);
+			   terPermissionMap.put(pr.Territory__c,userIdList);
+			}							   							   
+	   }
+									  	
+		for( Release__c rel : [SELECT Id,Territory_Name__c,Territory__c, Territory__r.FinalTCR_Range_Max__c,
+							   Release_Date__c ,Title__r.Name, Territory__r.FinalTCR_Range_Min__c,Title_Name__c FROM Release__c 
+				               WHERE Theatrical_Rights__c = 'Yes' And Territory__r.FinalTCR_Range_Max__c != null AND
+                               Territory__r.FinalTCR_Range_Min__c != null AND release_date__c != null AND release_date__c  = LAST_N_DAYS:1000
+							   AND Territory__r.Reporting_Territory__c = true AND UIP_Release_Status__c = null
+				               AND Final_TCR__c = null AND Territory__c IN:setOfTerritoryId]){
+				
+            
+			//Data needs to only fetch non final-TCR Release records 
+        	//with release dates approximately between FinalTCR_Range_Max__c and FinalTCR_Range_Min__c of belonging territory                                   
+			Date FinalTcrMinDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Max__c));
+			Date FinalTCRMaxDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Min__c));
+			
+			//   Release date is between  .FinalTCR_Range_Max__c & FinalTCR_Range_Min__c  depending upon territory                                         
+            if(rel.release_date__c < FinalTCRMaxDate && rel.release_date__c > FinalTcrMinDate){    
+				if(terReleaseMap.containsKey(rel.Territory__c)){				
+					terReleaseMap.get(rel.Territory__c).add(rel);
+				}else{
+					list<Release__c> relName = new list<Release__c>();
+					relName.add(rel);
+					terReleaseMap.put(rel.Territory__c,relName);
+				}								   							   
+			}
+		}
+	    generateEmails(teritoryList, terPermissionMap, terReleaseMap);								   
+	}
+	
+    private void generateEmails(List<Territory__c> territory, map<Id,list<string>> terPermMap, map<Id,list<Release__c>> terReleaseMap){
+		
+		String htmlBody = '';
+			  
+        Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage(); 
+		if(!territory.isEmpty()){		  
+			list<string> toAddressList = new list<string>();
+		// sending  mails to the territory permission user for the release based on territory which are in between FinalTCR_Range_Max__c & FinalTCR_Range_Min__c
+			for(Territory__c tr : territory){	
+                system.debug('debug1' + terReleaseMap);
+                system.debug('debug2' + terPermMap);
+				if(!terPermMap.isEmpty() && !terReleaseMap.isEmpty()){
+					if(terReleaseMap.containsKey(tr.id) && terPermMap.containsKey(tr.id)){					
+						toAddressList.addAll(terPermMap.get(tr.id));
+						htmlBody += '   <P>** System generated mail communication – Frequency: Monthly ** </P>';
+						htmlBody += '   <P>Dear Users, </P>';
+						htmlBody += '   <P>A Final TCR is due for the below releases:</P>';
+						htmlBody += '   <h3>Pending Final TCR :</h3></br>';
+						htmlBody += '   <table border="0" cellpadding="3" cellspacing="0" width="60%"><tr>';
+						htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Title</th>';
+						htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Territory</th>';
+						htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Release Date</th>';
+						
+						for(Release__c rel : terReleaseMap.get(tr.id)){
+							htmlBody += '   <tr><td nowrap="nowrap" style="border: 1px solid #ccc;">'+rel.Title__r.Name+'</td>';
+							htmlBody += '   <td nowrap="nowrap" style="border: 1px solid #ccc;">'+rel.Territory_Name__c+'</td>';
+							Date reldate = rel.Release_Date__c;
+							String dates = DateTime.newInstance(reldate.year(),reldate.month(),reldate.day()).format('dd-MMM-YYYY');
+							htmlBody += '   <td nowrap="nowrap" style="border: 1px solid #ccc;" align="left">'+dates+'</td>';
+						}
+					
+						htmlBody += '   </table>';
+						mail.setToAddresses(toAddressList);
+						mail.setSubject(' - Final TCR  [' +system.today().format()+ ']');
+						mail.setHtmlBody(htmlBody);
+						Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+						htmlBody = '';
+				
+					}				 
+				}
+			}			
+		}		 		  
+	}
+	
+//the "finish" method is called once all the batches are processed 
+    public void finish(Database.BatchableContext BC) {
+        // execute any post-processing operations
+    }
+}
