@@ -1,0 +1,1149 @@
+Future Method : 
+•	must be static, return void type, can use only primitive data type or collection of primitive data type.
+•	For making the callouts.
+•	For preventing the mixed dml error.
+•	future methods are not guaranteed to execute in the same order as they are called , if have to call in order  used Queuable apex.
+•	To test future methods, enclose your test code between the startTest and stopTest test methods. The system collects all asynchronous calls made after the startTest. When stopTest is executed, all these collected asynchronous processes are then run synchronously.
+•	If using Web service callouts, try to bundle all callouts together from the same future method, rather than using a separate future method for each callout.
+•	Get method cant be used in Future methods.
+
+Queuable Apex:
+•	Non-primitive types: Your Queueable class can contain member variables of non-primitive data types, such as sObjects or custom Apex types. Those objects can be accessed when the job executes.
+•	Monitoring: When you submit your job by invoking the System.enqueueJob method, the method returns the ID of the AsyncApexJob record. You can use this ID to identify your job and monitor its progress, either through the Salesforce user interface in the Apex Jobs page, or programmatically by querying your record from AsyncApexJob.
+•	Chaining jobs: You can chain one job to another job by starting a second job from a running job. Chaining jobs is useful if you need to do some sequential processing.
+•	reason to use future methods instead of queueable is when your functionality is sometimes executed synchronously, and sometimes asynchronously. It’s much easier to refactor a method in this manner than converting to a queueable class. This is handy when you discover that part of your existing code needs to be moved to async execution. You can simply create a similar future method that wraps your synchronous method like so:
+•	To use Queueable Apex, simply implement the Queueable interface
+•	Chaining jobs:  
+public class FirstJob implements Queueable { 
+    public void execute(QueueableContext context) { 
+        // Awesome processing logic here    
+        // Chain this job to next job by submitting the next job
+        System.enqueueJob(new SecondJob());
+    }
+}
+•	You can add up to 50 jobs to the queue with System.enqueueJob in a single transaction.
+•	When chaining jobs, you can add only one job from an executing job with System.enqueueJob, which means that only one child job can exist for each parent queueable job.
+
+JavaScriptRemoting: 
+JavaScript remoting (Js Remoting) is a way to call methods in Apex Classes directly from JavaScript. It allows you to perform tasks on the page without having to reload the entire page.
+Salesforce provides Visualforce.remoting.Manager.invokeAction method to call call APEX methods directly from javascript
+//Sample Code:
+function createConJsRemoting() {
+ 
+ var conLastName = document.getElementById('ContactName').value;
+ 
+ Visualforce.remoting.Manager.invokeAction(
+ '{!$RemoteAction.ContactRemoterClass.CreateContact}',
+ conLastName , 
+ function(result, event){
+ if (event.status) {
+ alert('Contact Created.');
+ window.location.href= '/'+ result.Id;
+ } 
+ }, 
+ {escape: true}
+ );
+ }
+ 
+Visualforce remote object
+1.	Does not need the form component , so view state got saved.
+2.	Page doesn’t get refreshed so less number of server calls.
+3.	Good if we need the value from apex controller back to viualforce page.
+
+Best Practices: 
+1.	Use soql query for loops.
+2.	Use dml for list of sobject not directly on sObject
+3.	No soql query under for loo[, tey to use nested queries.
+
+Governor Limits in salesforce:
+https://mindmajix.com/governor-limits-in-salesforce
+Database.Query() - It will allows you build a dynamic query at runtime. Example - You build a dynamic query and keep it in string variable and use that string variable in the database.query
+1	String fieldName = 'Name,Phone';
+2	String dynQuery = 'select Id ' + fieldName + ' From Account';
+3	Database.query(dynQuery);
+Database.Querylocator() - It returns a Query Locator of your soql query. The query result can be iterated over in batch apex or you can also use it visualforce page to display records. The query locator can return upto 50 million records.
+
+Standard controller encapsulates just a single Sobject (e.g. Account, Opportunity).
+
+Standard list controller contains a list of records (one or more), and has additional functions to facilicate paging (moving between pages) and updating a number of records at once., use recordsetVar 
+With and also provide pagination.
+
+Why future methods should be Static and Void in apex? Why can't we declare it non-static and with a return type?
+since Future methods can be accessed from any class and not depend on any class instance it is declared as Static, also Static keyword make it as utility method rather than normal class method. 
+
+why Void?
+Future method runs on it own thread, so it cannot return any values to previous instance. 
+
+Que3. Write soql query to get all the Account having contact.
+Ans3.  select id , name from Account where id  in (select accountid  from contact )
+Ques4.  Write soql query to get all the Account having no contact
+Ans 4. select id , name from Account where id not in (select accountid  from contact )
+
+Ques5.  Write a trigger to delete all the contact created while lead conversion?
+Ans5. Trigger deletecontact on lead (after insert , after update){
+if (Trigger.old[0].isConverted == false && Trigger.new[0].isConverted == true) {
+    if (Trigger.new[0].ConvertedContactId != null) {
+        contact c = [select id ,  name from contact Where Id = :Trigger.new[0].ConvertedContactId];
+system.debug('contact' + c);
+delete c;
+}
+}
+}
+
+Ques6 .  Return type of future method? Why it is void?
+Ans6.  Because it is asynchronous process.. For example if you run future method from synchronous process then you can’t wait to complete asynchronous process and get that value from asynchronous process in trigger context.
+Ques7.  Create a map for Account id and List of associated contacts?
+Ans7 .  Map<id, list<contact>> newMap = new Map<id, list<contact>>();
+            For(Account a : [select id ,(select id from contacts)  from Account]){
+	   If(!newMap.containsKey(a.id))
+{
+    newMap.put(a.id ,a.contacts);
+     system.debug('%%%%%%%'+ newMap);
+	newMap.put(a.id ,new list<contact>());
+        system.debug('@@@@@@@@'+ newMap);
+          }
+	newMap.get(a.id).addall(a.contacts);
+	system.debug('######'+ newMap);
+
+                
+            }
+
+Ques8: self relationship in salesforce?
+Ans8: it’s a look relationship to the same object.
+
+Ques: Whats the heap size?
+Ans. The heap size is the amount of memory allocated to objects that are being defined in your Apex code. And Apex code puts in a limit to the total allowed size of the apex heap size. This governor limit is calculated at runtime and depends on how the governor is invoked
+Ques:What is heap size limit in Salesforce?
+Ans: Salesforce enforces an Apex Heap Size Limit of 6MB for synchronous transactions and 12MB for asynchronous transactions.
+
+Ques9. ERROR: Apex heap size  too large : system.limitException
+Ans9.  The "Apex heap size too large" error occurs when too much data is being stored in memory during processing.  
+Prevention:
+•	Use the Transient Keyword
+•	Use Limit Methods
+1.	Use heap limits methods in your Apex code to monitor/manage the heap during execution.
+2.	Limits.getHeapSize() - Returns the approximate amount of memory (in bytes) that has been used for the heap in the current context.
+3.	Limits.getLimitHeapSize() - Returns the total amount of memory (in bytes) that can be used for the heap in the current context.
+•	Put Your Objects on a Diet
+If the objects in your collection contain related objects (i.e., Account objects with a number of related Contacts for each) make sure the related objects only contain the fields that are actually needed by your script.
+•	Use SOQL For Loops
+ Ques10.  How to map custom field of lead in lead conversion to created account and contacts?
+ Ans10.  From the object management settings for leads, go to the fields section, then clickMap Lead Fields. For each custom lead field, choose a custom account, contact, or opportunity field into which you want the information inserted when you convert alead.
+Ques 11:  When is it appropriate to use (SeeAllData=true) ?
+Ans 11:  https://salesforce.stackexchange.com/questions/149110/when-is-it-appropriate-to-use-seealldata-true
+Q12:  What is CPU time limit exception. Mention some scenarios when it will occur and also the fix for it.
+An12.  Salesforce has a timeout limit for transactions based on CPU usage. If transactions consume too much CPU time, we'll shut them down as a long-running transaction.
+As it count all the operation happening while running the class apart from soql , sosl queries and callouts to fetch the data.
+It Occurs because of:
+1.	Either any trigger is called infinite times due to running of code.
+2.	Either used for loop under the for loop.
+3.	Soql inside the for loop.
+Prevention:
+1.	Using Map based query
+2.	Aggregate SOQL usage
+3.   Explore if your business allows you to do the operation asynchronously: : In some cases business process may not be real time and hence if there is a chance to make code execute in @future ,this will break the context and also the CPU time out limit for asynchronous process is 60seconds(6X of synchronous process).So, consider this if you're in trouble of hitting the limit.
+4. Only take necessary data and run a loop.
+https://developer.salesforce.com/page/Apex_Code_Best_Practices
+ques13. How can one disable trigger in production and for a specific time?
+
+Ans
+1.	Disable the trigger in a Sandbox environment [You should have a Sandbox org which contains the same trigger]
+2.	Create a new Outbound Change Set in the Sandbox.
+3.	Add the disabled trigger to the Change Set.
+4.	Upload the Change Set to your Production Org.
+
+Ques14. If there is a validation rule on a specific field of object but the user does not have the permission for  the field in FLS  will the validation will be occur for the user? Yes it will occur
+Ques15. What if , fls have permission but not in Page layout?
+Ques16 :  certain action of Process builder:
+•	Apex
+•	Create a record
+•	Email alerts
+•	Flow
+•	Process
+•	Quick Actions
+•	Quip
+•	Send custom notification 
+•	submit for Approval
+•	Update records
+ 
+Ques17. There are 2 vf pages.VF1,VF2. There is a apex class C1 which are using as a extension on a page with a standard controller. Can we use C1 class as a controller on VF2 page. If yes how? Should we need to do any changes in the C1 class for this.
+Ques18> . There are 4000 records of opportunity, we need to find out the sum of amount on all the records. How will we find it?
+-statefullbatch
+Example:
+global class batchExample_stateful implements Database.Batchable<sObject>, Database.Stateful {
+    /**
+        * Webkul Software.
+        *
+        * @category  Webkul
+        * @author    Webkul
+        * @copyright Copyright (c) 2010-2016 Webkul Software Private Limited (https://webkul.com)
+        * @license   https://store.webkul.com/license.html
+    */
+  
+     public decimal count=0;
+    global Database.QueryLocator start(Database.BatchableContext BC) {
+        // collect the batches of records or objects to be passed to execute
+       
+         String query = 'SELECT Id,Name,amount FROM opportunity';
+        return Database.getQueryLocator(query);
+    }
+    
+    global void execute(Database.BatchableContext BC, List<opportunity> accList) {
+       
+        // process each batch of records
+ 
+        
+        for(opportunity acc : accList)
+        {        
+            // Update the Account Name 
+            count += acc.amount;
+            
+        }
+       
+        
+    }   
+    
+    global void finish(Database.BatchableContext BC) {
+        // execute any post-processing operations
+        
+        System.debug('Final Count==>'+count);
+  }
+}
+Follow this link when you want to pass parameters to Batch, we have to use constructor in batch class to execute  batch dynamically.
+http://ccoenraets.github.io/salesforce-developer-workshop/Batch-and-Schedule.html
+
+Ques19. How to query deleted records using SOQL query?
+Answer: 1.SOQL statements can use the ALL ROWS keywords to query all records in an organization, including deleted records and archived activities. 
+For example:
+ [SELECT COUNT() FROM Contact WHERE AccountId = a.Id ALL ROWS]);
+Ques20.  How to lock any sobject records?
+To lock a set of sObject records in Apex, embed the keywords FOR UPDATE after any inline SOQL statement. For example, the following statement, in addition to querying for two accounts, also locks the accounts that are returned:
+	Account [] accts = [SELECT Id FROM Account LIMIT 2 FOR UPDATE
+Ques21.- I HAVE TWO OBJECT WITH LOOKUP AND I WANTED TO UPDATE SECOND RECORD VALUE AFTER FIRST RECORD INSERTED HOW WILL YOU ACHIEVE THIS WITHOUT CODING.
+22 - WHAT IF RELATIONSHIP IS MASTER IN CASE OF Question 11? HOW YOU WILL ACHIEVE?
+23. what is java script Remoting?
+https://developer.salesforce.com/docs/atlas.en-us.pages.meta/pages/pages_js_remoting_summary.htm
+https://developer.salesforce.com/docs/atlas.en-us.pages.meta/pages/pages_js_remoting_example.htm
+https://developer.salesforce.com/docs/atlas.en-us.pages.meta/pages/pages_js_remoting.htm
+https://sfdcadda.blogspot.com/2017/05/use-of-javascript-remoting-on.html
+https://developer.salesforce.com/forums/?id=906F000000093JTIAY
+
+24. Recursive trigger
+http://www.sfdcpoint.com/salesforce/avoid-recursive-trigger-salesforce/
+
+public class RecursiveTriggerHandler{
+     public static Boolean isFirstTime = true;
+}
+
+
+trigger SampleTrigger on Contact (after update){
+ 
+    Set<String> accIdSet = new Set<String>();
+     
+    if(RecursiveTriggerHandler.isFirstTime){
+        RecursiveTriggerHandler.isFirstTime = false;
+         
+        for(Contact conObj : Trigger.New){
+            if(conObj.name != 'SFDC'){
+                accIdSet.add(conObj.accountId);
+            }
+        }
+         
+        // Use accIdSet in some way
+    }
+}
+
+
+25.What is Lightning connect ?
+An25. Lightning Connect lets you seamlessly access data from external sources, side-by-side with your Salesforce data. You can pull data from legacy systems such as SAP, Microsoft and Oracle in real time, without making a copy of the data in Salesforce. And its all easily configured by a simple yet powerful point and click interface..
+During this webinar, you will learn how Salesforce1 Lightning Connect helps Salesforce Admins and Business Analysts:
+•	Connect and access data from external sources with point and click simplicity 
+•	Dramatically reduce integration time to unlock and modernize back-office systems such as SAP, Oracle, Microsoft and more
+•	View external data side-by-side with existing Salesforce objects
+
+
+Ques 26. Given a business requirement, wherein you have to execute all the available actions in a single workflow rule, what would be the sequence of actions ?
+Ans26. The order in which individual actions and types of actions are executed is not guaranteed. However, field update actions are executed first, followed by other actions.
+
+1.	Assigning a task to someone.
+2.	Doing a field update.
+3.	Sending out an email.
+4.	Sending an outbound message.
+
+Ques27. Suppose there are 2 Account records with 3 contacts associated against each Account record. What would be the end result, if I merge these two Account  records ?
+Ans27. Acount will be one , contacts will be six , we have to merge contacts again.
+Ques28: Can we call a batch apex program in apex trigger ?
+Ans28 : yes , we can but not recommended , as it can hit governor limit for 5 jobs.
+Ques 29. SOQL Aggregate functions in Apex
+Ans29.  https://www.mstsolutions.com/technical/soql-aggregate-functions-in-apex/
+Ques30. https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/langCon_apex_SOQL_VLSQ.htm
+Ques31.  What is polymorphism? What is method overloading and method overriding?
+Ans 31 https://th3silverlining.com/2014/09/08/a-beginners-guide-to-object-oriented-programming-with-apex-3-polymorphism/
+Overriding and overloading
+https://www.programcreek.com/2009/02/overriding-and-overloading-in-java-with-examples/
+Ques32. No of records retervied using Database.getQuerylocator? how it can be possible to fetch more records than that?
+
+Ans 32 50 Million records , it bypasses the normal limit of 50000 records by SOQL query,to get more than 50 Million records use the 2 queries, go through the below link.
+
+https://developer.salesforce.com/forums/?id=906F00000005IF9IAM
+Ques33. Difference between list and set?/ what is map and their different methods?
+
+Ques34. Did map can accept a null value  as a key?
+
+This is generally not considered good style.
+Since NULL typically indicates an undetermined or unset value, it is generally confusing to use as a key to a map. (although, there may be specific circumstances where it makes sense)
+The alternatives depend on the situation, so let me use an example. Let's say that we want color specific strings in a text, and we also want a default color for text which doesn't match any of the strings.
+private HashMap<String,Color> stringColors;
+private Color defaultColor;
+Rather than storing the default color in the HashMap using a NULL key, put the default color in the specific variable. This makes it really clear to anyone viewing the code exactly what this color means.
+The driving factor, I would say, is if you will actually have a NULL value somewhere that can be directly looked up in the map. (this doesn't happen often, in my experience) In this specific example I gave, the default color would be used for any strings which aren't in the map. In this case, there isn't a NULL string that you want the color for.
+
+Ques 35 what is trigger default limit of executing when there is a bulk record?
+In API version 20.0 and earlier, if a Bulk API request causes a trigger to fire, each chunk of 200 records for the trigger to process is split into chunks of 100 records. In Salesforce API version 21.0 and later, no further splits of API chunks occur. If a Bulk API request causes a trigger to fire multiple times for chunks of 200 records, governor limits are reset between these trigger invocations for the same HTTP request.
+
+
+
+
+Triggers:
+1.	Write a trigger on Account , While inserting a text value as 'someName' ended with 'text' ex: 'renuText' On Account Object it should through an error. How you will achieve this...??
+
+2.	Trigger to show error on page while inserting a duplicate email in contact for the same account.
+
+3.	Write trigger to update Owner of child account. Example a is child of A1 the if we insert or change owner of A1 to U1 then owner of A should be A1.
+
+4.	Create a map for Account id and List of associated contacts
+5.	Write a trigger to insert a contact and user when account is created. What is Mixed DML and how would 
+
+6.	Write a trigger to delete all the contact created while lead conversion. Prevent the contact creation while lead conversion.
+
+7.	There is a field billingAddress in company object. Whenever a new employee is inserted or old one is updated employees billing address should be copied to company’s billing address. Company is master and employee is child. Write trigger.
+
+8.	Write a trigger to calculate total Amount of opportunity on the Account associated to that account.
+
+9.	Calculate no of contact on each account.
+
+10.	For every opportunity to be created with amount greater than 60 craete two opportunity with amount/2 and mapping all fields.
+
+11.	 For any Account it can be only one contact/three contact.
+
+12.	No Account with duplicate amount.
+
+13.	Contact should not be created if the email of contact already exist in leads.
+
+14.	If we check the checkbox of contact  , active check box of the related account should also be checked.
+
+15.	 There are many cases on opportunity, if one of the case got closed all the case should get close to and associated opportunity two.
+
+16.	 If  there are related contacts to Account , you cant delete the account.
+
+17.	Account amount should be equally divided to existing opportunities.
+
+18.	 Amount should be divided after the new opportunities also ceated.
+
+19.	 Ek aur trigger : https://success.salesforce.com/answers?id=9063A000000kwUkQAI
+
+20.	 https://developer.salesforce.com/forums/?id=9060G000000I9goQAC
+
+21.	 https://salesforce.stackexchange.com/questions/238813/how-to-get-mapid-listcontact-from-contact-soql-query-group-by-accountid
+
+
+More questions at:
+https://soql101.wordpress.com/
+http://www.salesforce-interviewquestions.com/p/interview-questions.html
+https://mindmajix.com/salesforce-interview-questions
+https://www.edureka.co/blog/interview-questions/salesforce-interview-questions/
+https://intellipaat.com/blog/interview-question/salesforce-interview-questions/
+http://www.sfdcpanda.com/category/apex/
+
+1.	There is a simple SOQL query ‘Select Id, Name from Opportunity’ which fetches millions of records without any selection criterion. How do we optimize the performance of this simple query without using any selection criterion ?
+The performance of a SOQL will depend on the presence of a selective filter. If a SOQL query contains at least 1 selective filter, the query is said to be selective. If the SOQL query doesn't contain a selective filter, the query is said to be un-selective and will require a full table scan.Consider an indexed filter 
+
+2.	What should be done to override the governor limit that restricts you from fetching more than 50,000 records in a SOQL query ?Use batch or database.queryLocator
+3.	There is a master-detail relationship between two objects and I want to ensure that the master object should not have more than 10 child records. How can we achieve this without using a trigger ?
+Yes you can,make a rollup summary field on parent  and populate the count of the child and then put validation rule on the child object and use the parent roll up summary field>=10
+4.	What are skinny tables ? What are they used for ?
+A skinny table is a custom table in the Force.com platform that contains a subset of fields from a standard or custom base Salesforce object. Force.com can have multiple skinny tables if needed, and maintains them and keeps them completely transparent to you.
+https://sfdcbeginner.com/what-are-skinny-tables-in-salesforce.html
+5.	What is the use of @testsetup annotation in a test class ?
+Method marked with @TestSetUp annotation executes before any testMethod.
+Data created in this method doesn't need to be created again and again, and it is by default available for all test methods.
+There can be only one setup method per test class.
+
+6.	How can a test class access the private members of another class ? Ans use @TestVisible
+7.	How can we refresh/reset the governor limits within a test class ?Ans StartTest StopTest
+8.	Can we call a batch apex program in apex trigger ?Ideally we should not,Yes we can but it will exploit the 5 Batch job governer limit  of salesforce
+9.	I want to ensure that once a child record has been added to a master-detail relationship, it cannot be deleted. How can we achieve this using the declarative capability of the platform ?
+Ans9. https://developer.salesforce.com/forums/?id=906F0000000BSqaIAG 
+In validation rule use this
+PRIORVALUE(RollupField__c ) > RollupField__c
+10.	What are lightning events ? Where do you use them ?
+Component events: to talk to a parent using the capture and bubbling mechanism, like with DOM events. Usually, one component is interested by the event, like an event aggregator.
+Application events: to broadcast to other components and not exclusively ancestors. Applications events can talk to many components that can be interested by the event. The broadcast can be boxed to an area of the DOM (everything below a DIV for example).
+
+Example of lightning Component event:
+https://developer.salesforce.com/docs/atlas.en-us.lightning.meta/lightning/events_component_example.htm
+
+11.	In a particular object, I have given only read access to a certain field named as ‘Site__c’ to all users in the organization. However, if I have marked ‘Site__c’  as a required field in the page layout for that object. So, what will happen when a user saves the record in that object through that page layout ?
+Need to check
+12.	 What are the different types of attributes that can be added to a lightning component ? 
+Basic Types- Boolena,Integer,String etc
+Function type:Javascript function as a type ,it is used only on the client side
+Object Type:Use as object as a type, preferentially try using MAP as ultimately using object as atype could ultimately lead to desrialization issues and finally lead to exception, as everything including object gets converted as a string on the server.It can be standard as well as custom objects.
+
+Collection types: Map,List,Set
+<aura:attribute name="colorPalette" type="List" default="['red', 'green', 'blue']" />
+
+
+<aura:attribute name="sectionLabels" type="Map" default="{ a: 'label1', b: 'label2' }" />
+
+Custom apex class types
+<aura:attribute name="colorPalette" type="docSampleNamespace.Color[]" />
+Framework specific types
+*Aura.component[]
+*Aura.Component
+*Aura.Action
+
+13.	What is the difference between application level events and component level events in lightning ?Child to parent(Component) , independent of heirarchy(Application)
+14.	What is the difference between pageblocktable and datatable in VF pages ?
+Difference between data-table vs page block table in Visualforce page. Both components used to render data in tabular format. Datatable used to display data in simple HTML table format where as PageBlockTable uses look and feel of Standard Salesforce CSS and must be written under apex:PageBlock component.
+15.	What is the use of the ‘transient’ keyword ?
+You can also use the transient keyword in Apex classes that are serializable, namely in controllers, controller extensions, or classes that implement the Batchable or Schedulable interface. In addition, you can use transient in classes that define the types of fields declared in the serializable classes.
+Declaring variables as transient reduces view state size. A common use case for the transient keyword is a field on a Visualforce page that is needed only for the duration of a page request, but should not be part of the page's view state and would use too many system resources to be recomputed many times during a request.
+
+16.	How can we set-up recurring time-based workflow actions in the platform ?Need to ask
+17.	Explain the different scenarios wherein you need to use different types of collections i.e List, Set and Map.
+18.	What would happen if I perform a DML update operation on the before update trigger of the same sObject record ?
+Before insert event
+Data committed to database
+After insert event
+
+Means when you use before insert operation records are not committed to database so If we change the trigger context record's value then we don't need perform DML (This is Id is not generated because it is not committed to database)
+Once it is committed to database means the record Id is generated and your trigger records in read only mode you can't update the values now(because it is committed to database)
+That's why we need to perform extra DML for updating records.
+Note: If in after event if any error occurs then complete DML operation rollback.
+Best way if you want to update the same record in trigger then always go with before event. This way you can skip the extra DML.
+
+19.	What is the use of the <aura:method> tag in Lightning ?
+This enables you to directly call a method in a component's client-side controller instead of firing and handling a component event. Using aura:method simplifies the code needed for a parent component to call a method on a child component that it contains.
+20.	How do you create RESTful web services using apex ?
+21.	How do you implement Aggregate functions in apex ?
+AVG() – Returns the average value of a numeric field.
+COUNT() – Returns the number of rows matching the query criteria.
+MIN() – Returns the minimum value of a field.
+MAX() – Returns the maximum value of a field.
+SUM() – Returns the total sum of a numeric field.
+
+22.	What is the difference between custom objects, custom settings and custom meta data ?
+https://success.salesforce.com/answers?id=9063A0000019bJgQAI
+23.	What is the use of communities in Salesforce ?
+24.	List the important methods in List, Set and Map
+List Methods:
+https://micropyramid.com/blog/how-to-use-list-methods-in-salesforce/
+Set Methods:
+•	add(setElement)
+•	addAll(fromList)
+•	addAll(fromSet)
+•	clear()
+•	clone()
+•	contains(setElement)
+•	containsAll(listToCompare)
+•	containsAll(setToCompare)
+•	retainAll(listOfElementsToRetain)
+Map Methods:
+The following are methods for Map. All are instance methods.
+•	clear()
+Removes all of the key-value mappings from the map.
+•	clone()
+Makes a duplicate copy of the map.
+•	containsKey(key)
+Returns true if the map contains a mapping for the specified key.
+•	deepClone()
+Makes a duplicate copy of a map, including sObject records if this is a map with sObject record values.
+•	equals(map2)
+Compares this map with the specified map and returns true if both maps are equal; otherwise, returns false.
+•	get(key)
+Returns the value to which the specified key is mapped, or null if the map contains no value for this key.
+•	getSObjectType()
+Returns the token of the sObject type that makes up the map values.
+•	hashCode()
+Returns the hashcode corresponding to this map.
+•	isEmpty()
+Returns true if the map has zero key-value pairs.
+•	keySet()
+Returns a set that contains all of the keys in the map.
+•	put(key, value)
+Associates the specified value with the specified key in the map.
+•	putAll(fromMap)
+Copies all of the mappings from the specified map to the original map.
+•	putAll(sobjectArray)
+Adds the list of sObject records to a map declared as Map<ID, sObject> or Map<String, sObject>.
+•	remove(key)
+Removes the mapping for the specified key from the map, if present, and returns the corresponding value.
+•	size()
+Returns the number of key-value pairs in the map.
+•	toString()
+Returns the string representation of the map.
+•	values()
+Returns a list that contains all the values in the map.
+
+25.	What are future methods and where are they used ?
+A future method runs in the background, asynchronously. You can call a future method for executing long-running operations, such as callouts to external Web services or any operation you'd like to run in its own thread, on its own time. future , the method executes when Salesforce has available resources.
+26.	What is the difference between the normal “insert” operation and “Database.insert” operation ? Which is preferred over the other and why ?
+Insert is a DML statement which is same as Database. insert to insert the record in database. If we use insert DML statement in bulk operation if error occurs in this operation, then execution stop and rollback all the insertion from the database those has been inserted successfully.
+In case of Bulk records try using  Database.insert
+27.	How do you implement the locking functionality of records in apex ?
+ In Apex, you can use FOR UPDATE to lock sObject records while they're being updated in order to prevent race conditions and other thread safety problems. While an sObject record is locked, no other client or user is allowed to make updates either through code or the Salesforce user interface.
+28.	What is the difference between SOQL and SOSL query ?
+SOQL (Salesforce Object Query Language ) retrieves the records from the database by using “SELECT” keyword. SOSL(Salesforce Object Search Language) retrieves the records from the database by using the “FIND” keyword. By Using SOQL we can know in Which objects or fields the data resides.SOSL returns List of List of sObject while SOQL returns List of Sobject records.
+29.	How do you implement SOAP web services in apex ?
+https://www.salesforcetutorial.com/soap-web-service-creating-class-wsdl/
+30.	What are the different context variables available in apex triggers ?
+Variable	Usage
+isExecuting	Returns true if the current context for the Apex code is a trigger, not a Visualforce page, a Web service, or an executeanonymous() API call.
+isInsert	Returns true if this trigger was fired due to an insert operation, from the Salesforce user interface, Apex, or the API.
+isUpdate	Returns true if this trigger was fired due to an update operation, from the Salesforce user interface, Apex, or the API.
+isDelete	Returns true if this trigger was fired due to a delete operation, from the Salesforce user interface, Apex, or the API.
+isBefore	Returns true if this trigger was fired before any record was saved.
+isAfter	Returns true if this trigger was fired after all records were saved.
+isUndelete	Returns true if this trigger was fired after a record is recovered from the Recycle Bin. This recovery can occur after an undelete operation from the Salesforce user interface, Apex, or the API.
+new	Returns a list of the new versions of the sObject records.
+This sObject list is only available in insert, update, and undelete triggers, and the records can only be modified in before triggers.
+newMap	A map of IDs to the new versions of the sObject records.
+This map is only available in before update, after insert, after update, and after undelete triggers.
+old	Returns a list of the old versions of the sObject records.
+This sObject list is only available in update and delete triggers.
+oldMap	A map of IDs to the old versions of the sObject records.
+This map is only available in update and delete triggers.
+operationType	Returns an enum of type System.TriggerOperation corresponding to the current operation.
+Possible values of the System.TriggerOperation enum are: BEFORE_INSERT, BEFORE_UPDATE, BEFORE_DELETE,AFTER_INSERT, AFTER_UPDATE, AFTER_DELETE, and AFTER_UNDELETE. If you vary your programming logic based on different trigger types, consider using the switch statement with different permutations of unique trigger execution enum states.
+size	The total number of records in a trigger invocation, both old and new.
+
+31.	What are dynamic SOQL queries and how do you prevent SOQL injection in dynamic SOQL queries ?
+Dynamic SOQL refers to the creation of a SOQL string at run time with Apex code. Dynamic SOQL enables you to create more flexible applications. For example, you can create a search based on input from an end user or update records with varying field names.
+String myTestString = 'TestName';
+List<sObject> sobjList = Database.query('SELECT Id FROM MyCustomObject__c WHERE Name = :myTestString');
+
+32.	What is apex managed sharing ?
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_bulk_sharing_creating_with_apex.htm
+33.	What is the difference between approval process and workflow rules ?
+approval process are triggered by explicitly clicking the "Submit for Approval" button. Workflow consists of single step and single action Approval process consists of multiple steps. Also different action is taken based upon whether the record is approved or rejected. Workflows can be modified or deleted
+34.	When do we need to use Javascript remoting and how is it implemented ?
+When to Use JavaScript Remoting. JavaScript remoting is optimized for use on mobile pages and on pages that use third-party JavaScript libraries. It enables dynamic, interactive pages that feel more responsive than traditional Visualforce pages.
+How it is implemented https://developer.salesforce.com/docs/atlas.en-us.pages.meta/pages/pages_js_remoting_example.htm
+35.	How can you setup governor limit email warnings in apex ?
+Log in to Salesforce as an administrator user.
+From Setup, enter Users in the Quick Find box, then select Users.
+Click Edit next to the name of the user to receive the email notifications.
+Select the Send Apex Warning Emails option.
+Click Save.
+
+
+36.	What are the different types of reports in Salesforce ?
+There are four types of reports you can create in Salesforce, Tabular, Summary,Matrix and Joined Reports. Each are best suited for showing different types of data depending on what you want out of a report.
+37.	What is analytic snapshot ?
+An analytic snapshot lets you report on historical data. Authorized users can save tabular or summary report results to fields on a custom object, then map those fields to corresponding fields on a target object. They can then schedule when to run the report to load the custom object's fields with the report's data. Analytic snapshots enable you to work with report data similarly to how you work with other records in Salesforce.
+For example, a customer support manager could set up an analytic snapshot that reports on the open cases assigned to his or her team everyday at 5:00 PM, and store that data in a custom object to build a history on open cases from which he or she could spot trends via reports.Then the customer support manager could report on point-in-time or trend data stored in the custom object and use the report as a source for a dashboard component
+
+It is available in Professional,Enterprise,Unlimited and Developer editions
+
+38.	What is the use of the Database class in apex ?
+Operation	Result Class
+insert, update	SaveResult Class
+
+upsert	UpsertResult Class
+
+merge	MergeResult Class
+
+delete	DeleteResult Class
+
+undelete	UndeleteResult Class
+
+convertLead	LeadConvertResult Class
+
+emptyRecycleBin	EmptyRecycleBinResult Class
+
+
+39.	What is Lightning connect ?
+http://www.vinaychaturvedi.com/blog/display-and-select-list-of-records-using-wrapper-class-in-lightning-component/
+
+
+------New Questions---------------
+Birlasoft:
+
+Ques1. if there is an after update trigger on account and you are updating the account in future method which is being called from the trigger, will it be an issue?
+Ques2. how to get the farmost parent of account and farmost child of the account?
+Ques3. how to get the records owned by the user across all objects?
+Ques4: where the data is been executed in execute Method : Apex ya database
+
+
+Nagarro:
+Ques1. Can we have a self relationship in user?
+Ans1. Yes , but it will be a hierarchy look up.
+Ques2. What is hierarchy lookup?
+Ans2. A look up to the user on the user object.
+http://sfdc-know-how.blogspot.com/2013/12/hierarchical-relationship.html#targetText=Salesforce%20gives%20you%20special%20relationship,or%20indirectly%20refer%20to%20itself.
+Ques3. Suppose we have a self relationship with case , now if A is the parent of b, then b cant be parent of any other case?
+Ques4:  suppose there are two external object you want to insert them in salesforce they are unrelated but have a common field of user , as soon as both get insert they form a master detail relationship between them?
+Ans4. https://help.salesforce.com/articleView?id=000320964&type=1&mode=1
+Ques5. Two managers are in the same role hierarchy , there is common analyst under them , how can you hide the records of analyst from one manager and visible to another.
+Ques6:  how can a custom setting value get changed by an ordinary user(not a system administrator)?
+An6 from vf pages
+Ques7: suppose there is  a lightning component A, it has three child component B, C, D on press of a button on component a , some calculation has been done on B,C,D . how can you pass the values from component back to A, after calculation has been completed in the child component?
+Ques8: what is  external id?
+Ques9 : suppose therer is a excel file containing data ,
+Contact names(standard)	Contact email(contact standard object)	Product detail(custom object)	Contact product(junction object)
+Prashank	pnk@gmail.com	Nokia	Any data
+Arpit	Arpi1310@gmail.com	Vivo	Any data
+Saurabh	saurabh@gmail.com	Applle	Any data
+
+			
+
+You have to insert the details in given objects. Which object will be insert first.
+Data should be rollback if junction object rcord insertion got failed.
+
+Ques10. Suppose a case get closed , send a n email to the user that case is closed. As soon as it got closed create a new case is create with all information.
+If a customer reply on the email a new case should be created, with all old case details.
+Ques11. How can you show fields of account on related list of contacts?
+Question 12 Can we do scheduling of any action workflow or process builder?
+Question 13 We have the below question.We have 3 objects, Account Opportunity and contact.
+
+Account Field 1(Email type)
+Opportunity Field 2(email type)
+Contact Field 3(Email type)
+
+Sanbox is about to go a refresh, we need to save these fields of the objects from getting masked?
+Suggestion : Use batch class
+
+
+Question 14: Calling a batch from trigger? Can we, if yes then what is the pros and cons?
+
+Ques: All about batch classes: https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_batch_interface.htm
+Ques15.  Transient keyword?
+Ams15 .  Use the transient keyword to declare instance variables that can't be saved, and shouldn't be transmitted as part of the view state for a Visualforce page.
+Clicking the refresh button on the page causes the transient date to be updated because it is being recreated each time the page is refreshed.
+Ques 16. What is static method?
+Ans 16. Static methods, variables, and initialization code have these characteristics.
+•	They’re associated with a class.
+•	They’re allowed only in outer classes.
+•	They’re initialized only when a class is loaded.
+•	They aren’t transmitted as part of the view state for a Visualforce page.
+A static variable is static only within the scope of the Apex transaction. It’s not static across the server or the entire organization. 
+The value of a static variable persists within the context of a single transaction and is reset across transaction boundaries. 
+To store information that is shared across instances of a class, use a static variable. All instances of the same class share a single copy of the static variable. 
+
+Ques17. Comparable Interface :
+Ans17:  Adds sorting support for Lists that contain non-primitive types, that is, Lists of user-defined types.
+To add List sorting support for your Apex class, you must implement the Comparable interface with its compareTo method in your class.
+
+Ques18 .  how can you associate the email that is being replied on the email that have created the  case to the same case ?
+Ans18 .  https://focusonforce.com/configuration/salesforce-email-to-case-example/
+
+Ques19. Suppose the case is coming in one by one .and you have 5 user to associate the owner of the case. How can you associate each owner to each upcoming case in the round robin manner?
+
+Ques 20. What do you mean by Final variable?
+Ques21 .  to find the ultimate chid and ultimate parent of the account?
+Ans 21. public class accheirarchy{
+
+public void updateUltimateParentOnAccount(Account objAcc) {
+
+    Boolean isAccNotNull = true;
+    Integer count=0;
+
+    String strParentRecordId = objAcc.ParentId;
+
+    while(isAccNotNull) {
+
+        Account objParentAccount = [SELECT ParentId,Name,Level__c FROM Account WHERE Id = :strParentRecordId];
+
+        if(objParentAccount.ParentId == null) {
+
+            objAcc.ultimate_parent__c= objParentAccount.Name;
+            isAccNotNull = false;
+            continue;
+        }
+
+        strParentRecordId = objParentAccount.ParentId;
+    }
+
+    update objAcc;
+}
+public void updateUltimateChildOnAccount(Account objAccChild) {
+
+    Boolean isAccNotNull = true;
+    Integer count1=0;
+
+    String strParentRecordId = objAccChild.Id;
+
+    while(isAccNotNull) {
+
+        Account objChildAccount = [SELECT ParentId,Name,Level__c,Id FROM Account WHERE parentId = :strParentRecordId];
+
+        if(objChildAccount.Id == null) {
+
+            objAccChild.Ultimatechild__c= objChildAccount.Name;
+            isAccNotNull = false;
+            break;
+        }
+
+        strParentRecordId = objChildAccount.Id;
+    }
+
+    update objAccChild;
+}
+}
+
+Delloite USI:
+1.	Suppose there are three user 
+A – CEO
+B – Manager
+C – Advisor
+
+		 B should not able to see the  C record but  A should?
+2.	Three user A, B, C having the same profile, but no role 
+B – should not able to see the record of A and C.
+A-Should able to see all records in the system.
+
+3.	We have the process builder :
+With condition 1  and action 1 and then it stops.
+What we want after performing the action 1 , there is another condition 2  with action 2 should be perform?
+		
+4.	what is difference between aura:method & component event?
+
+5.	There are 1, 60000 lead ,they should be inserted into the system assigned to user or a queue , as soon as lead inserted in the system the lead status changed into Marketing Qualified , and after insertion it should be assigned to a user based on particular Zipcode of the lead. The assignment should not happen before insertion of lead in the system?
+
+6.	Roll up summary trigger.
+
+Infosys :
+
+1.	Pre post sandbox refresh steps.
+2.	If we are loading records through Data loader I want to share records to the users depending on the state field how we are supposed to do that?
+3.	Difference between DoInit and rerender?
+4.	What Design does in Lightning bundle?
+5.	How to show different fields for the same record type and same page layout to 2 different users?
+6.	Why can’t we update Set objects and non set up objects at the same time?
+7.	How to get update records on Load  in VF?
+
+
+Axtria:
+
+1.	Get the Jason data from a third party store it somewhere in salesforce and then email it to the manager?
+2.	Trigger to update Multipicklist State field value of account when an opportunity is insert ?Trigger will take the unique values of the opportunity under the account , and all the unique states will be populated in the account Multiselect picklist field.
+3.	      
+Account Name	Created date
+B	2018
+B	2019
+A	2011
+H	2011
+P	2016
+A	2017
+K	2000
+H	2019
+P	2015
+
+                   Remove the duplicates and keep the ordest created account.
+
+4.	Visualforce page 1 and visualforce page 2, Update a field in VF1 and click submit, Vf2 should have the same field value updated.
+5.	How to avoid recursion in Trigger, when recursion arises?
+6.	Integration questions on callouts?
+
+
+
+
+Delloite USI: 2st round:
+
+1.	What is the maximum size of a batch job?
+2.	Suppose there is opportunity , creating opportunity record , there is a validation rule that amount cant be  greater than 5000. There is another workflow on the opportunity which say if region is north- west , the amount should be updated to 6000.
+So if a record is created with a  value 6000? Is the record get saved?
+If region is north west and amount is 4000 ? what will be the final value of amount?
+Manager check this and say , this is not right, in no way value can be greater than 5000, but   you will do if workflow is still active to prevent turning amount 6000?
+3.	Explain the sale cycle?
+4.	What will you do , when you convert the lead , on conversion it converted into account and contact , then if the existing Account is existed the contact converted should be associated to the existing Account. And new Account should not be created?
+
+5.	How mnay type of relationship are there in salesforce?
+
+6.	What is lightning data service?
+
+Tavant Interview:
+1.	What is Maximum Trigger Depth Exceeded ? if you are using the boolean variable as solution, then what happen if you try to update the 500 record using data loader? As trigger run in default size of 200 and Boolean variable will change , and den trigger will not run again for other 300 records left?https://wdcigroup.net/salesforce-tip-apex-development-maximum-trigger-depth-exceeded/
+https://salesforce.stackexchange.com/questions/22828/what-are-recursive-triggers-how-to-control-them-please-provide-an-example-also
+2.	Suppose there is Account and associated opportunities to that, if we give discount to one opportunities , same discount should be applicable to all opportunity and the updated amount after the discountshould be update on Account.
+
+NIIT Technologies:
+	1. phases in lightning?
+3.	2. events in lightning (We have a hierarchy A->B->C->D->E->F, can we use application event in this case?)
+4.	3. junction obj deletion (can we delete junction object? What would be the impact if it has existing records?)
+5.	4. master-detail deletion (if master is deleted, what will happen?)
+6.	5. @future 
+7.	6. batch classes (Suppose we have 100 records, start method returns 100 records, how many times execute and finish methods execute in this case?)
+8.	7. synchronous or asynchronous
+9.	8. is batch class synchronous or asynchronous?
+10.	9. types of attributes declaration in lightning? hash declaration?
+11.	10. action function vs action support
+12.	11. remoting?
+13.	12. Map methods?
+
+
+Trigger Error:
+
+1.	System.Exception: SObject row does not allow errors - trying to prevent deletion
+
+Ans1.  You can use the addError method for only those records that are avaliable in Trigger Context. 
+
+for(Account a : trigger.old){
+    if(Trigger.isdelete ){
+         if(Trigger.isbefore ){
+       if(accountOppMap.containskey(a.id) &&  accountOppMap.get(a.id).size() > 0){
+     
+           Account actualRecord = Trigger.oldMap.get(a.Id);
+            actualRecord.adderror('You cant delete the account with the existing opportunity');
+        }
+    }
+    }
+    }
+
+
+2.	NullPointerException de-reference a null object in Apex code trigger
+
+Ans2.  https://help.salesforce.com/articleView?id=000327918&type=1&mode=1
+
+3.	Record is read only : in trigger.old for before trigger
+
+Ans3. http://sfdcsrini.blogspot.com/2014/09/what-is-record-is-read-only-trigger.html
+
+4.	System.SObjectException: DML statement cannot operate on trigger.new or trigger.old: Trigger.countClosedOpportunities: 
+Ans4.  Remove the update DML statement at the end. By using the "before" trigger to modify the Trigger.new objects, you don't need to explicitly perform an update DML statement. When the trigger ends, it will implicitly update the data as you have modified the values.
+
+5.	NullPointerException : Argument cant be null
+If you are iterating over the null list
+
+
+
+
+All about events:
+
+https://developer.salesforce.com/docs/atlas.en-us.lightning.meta/lightning/events_component_bubbling.htm
+
+https://developer.salesforce.com/blogs/developer-relations/2017/04/lightning-inter-component-communication-patterns.html
+
+DXC Technologies:
+1. Einstein?
+2. How data migration done?
+3. Why we can't delete users in salesforce?
+4. deployment tools?
+5. ANT?
+6. APIs?
+7. action function
+8. there is a standard object with owd public. Manager can see their sub-ordinate records, how to restrict the managers to see the sub-ordinates records in this case?
+9. trigger to cascade delete the records of any object?
+
+10. trigger best practices
+11. wrapper class to display acc, del button, edit button? VF Page components kaunse use karenge?
+12. how we display object records on vf page other than using data/pb tables
+13. Analytic Snapshots
+14. Ways to apply pagination
+
+
+
+Best Practice for lightning Component:
+
+https://www.jitendrazaa.com/blog/salesforce/15-ways-to-improve-performance-of-lightning-components-in-salesforce/
+
+Test Classes:
+
+https://www.jitendrazaa.com/blog/salesforce/apex/faq-writing-test-class-in-salesforce/
+
+https://www.jitendrazaa.com/blog/salesforce/test-setup-method-in-apex-test-class/
+
+New links to learn:
+
+http://simpluslabs.com/event-propagation-in-lightning-component/
+
+https://www.sfdcstop.com/2018/04/salesforce-lightning-events-tutorial.html
+
+https://www.sfdcstop.com/2018/04/salesforce-lightning-events-tutorial.html -- best hai
+
+
+Sapient
+
+What is community?
+What communties you have worked upon?
+What is the basic difference between site and community?
+Can we update parent field from child for Master detail as well as Lookup Field?
+What is visualforce force remoting?
+When prefer  queuable instead of Future method?
+How to show more than 50,000 records in a VF page or community page?
+
+Nagarro:
+
+Q1. How can you count no of times a contact detail page is refreshed?
+Q2. What is Apex design pattern?
+Q3. Write a trigger , when a contact is been insert with last name and email id , a new account should be created  and the Account created with that contact should also be associated.
+Note: Contact with same email id wont creating two account , with one email id only one contact can be created.
+Q4.how can you use lightning component in the third party app apart from visualforce page?
+Q5. What are the points to be taken care before migration of app in classic to lightning, what ar4e different standard object that’s not supported in lightning
+Q6: whats the new limit of view state?135kb
+Q7. Version controlling?
+Q8: Code reviewing tool you work upon?
+Q9 whats an interface? Have you made any custom interface?
+Q10 . What is inheritance?
+Q11: interface used for component available as llightning Tab?appostable
+
+
+Accenture :
+
+Ques1: Describe the lightning component bundle?
+Ans1 https://www.jitendrazaa.com/blog/salesforce/getting-started-with-basics-of-lightning-component/
+Ques2:how you display data in modal pop up box? Hows is slds hide and slds show used?
+<div class="demo-only">
+  <div class="slds-hide">I am hidden</div>
+  <div class="slds-show">I am shown as a block</div>
+  <div class="slds-show_inline-block">I am shown as an inline-block</div>
+</div>
+
+
+Ques3. Whats Lightning data service?
+Ans
+•	RecordId – represents record to be loaded, deleted or updated. If its null then it indicates record to be inserted
+•	LayoutType – Layout from which field needs to be loaded. Currently it supports Full or Compact
+•	Fields– If Layout does not contains field, we can use this attribute. Either one of LayoutType or Fields is mandatory.
+•	Target* – attributes starting with target indicates values to be returned from Data Service. It can return record or error.
+•	Mode – Indicates Data Service should be used in View or Edit mode
+•	RecordUpdated – edit mode does not updates record by default, to update target* attributes, use this method handlerRead record using Lightnin
+Advantages:
+Advantages of Lightning Data Service
+•	No need to write any Apex class
+•	No need to write SOQL
+•	Field level security and record sharing is inbuilt
+•	CRUD operation supported
+•	Shared cache is used by all standard and custom components
+•	Auto notification to all components
+•	Supports offline in Salesforce 1
+<force:recordData aura:id="record"
+			layoutType="FULL"
+			recordId="{!v.recordId}"
+			targetError="{!v.recordError}"
+			targetRecord="{!v.account}"
+			targetFields="{!v.accountRecord}"
+	    fields="Name, Company_Email__c" 
+			mode="VIEW"/>
+
+
+Que4 : Whats the difference between workflow, process buider, trigger & flow?
+Ques  ways you communicate between component?Ans : Use component event to do that, and communicate values from child component  parent.yes
+Ques6 ; different context of trigger?Already answered
+Ques7 : ways you can call controller method from java script?
+Visualforce remoting
+Ques8: ways you can hide the data  in lightning component?
+Ans 8: We can use aura :if or render to achive this
+Ques9 : how to call apex class from lightning component?
+Ans9: http://amitsalesforce.blogspot.com/2018/08/invoke-apex-from-lightning-component.html
+Ques10: difference between helper And js controller?
+Ans 10: The helper is designed to have shared code in it. So, you could have code shared by your renderer and your controller or by multiple controller functions. That should go in the helper JS file.I think that a good practice is to let the controller respond to events, possibly perform some amount of control flow, and delegate business logic to the helper as a separation of concerns. It also sets you up to be able to reuse your business logic in other parts of the component in the future.Helper code can be shared among components when they are related through inheritance. If one component extends another it inherits its super component's helper and can override it.
+
+
+
+
+RBS
+
+Q1 What is design Pattern in Salesforce?
+Ans1   https://developer.salesforce.com/page/Apex_Design_Patterns
+•	Singleton - minimizing object instantiation for improved performance and to mitigate impact of governor limits
+•	Strategy - defining a family of algorithms, enscapsulating each one and making them interchangeable and selectable at runtime
+•	Decorator - extending the functionality of an sObject in Apex
+•	Facade - simplifying the execution of classes with complex interfaces (e.g. web service callouts)
+•	Composite - treating a group of objects in a similar manner to a single instance of that object
+•	Bulk State Transition - efficiently tracking the change of a field value in a trigger and executing functionality based on this change
+
+Q2 What is the use of Static and  static Mehtods Keyword?
+Ans 2. Static variables are variables that belong to an overall class, not a particular object of a class. Think of a static variable to be like a global variable – its value is shared across your entire org. Any particular object’s properties or values are completely irrelevant when using static.
+Static methods, similarly, are methods that act globally and not in the context of a particular object of a class. Being global, static methods only have access to its provided inputs and other static (global) variables.
+https://www.sfdc99.com/2015/01/22/introduction-to-the-static-keyword/
+
+Q3 Why MDML exception occurs?
+Ans3-DML operations on certain sObjects, sometimes referred to as setup objects, can’t be mixed with DML on other sObjects in the same transaction. This restriction exists because some sObjects affect the user’s access to records in the org. You must insert or update these types of sObjects in a different transaction to prevent operations from happening with incorrect access-level permissions. 
+
+https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_dml_non_mix_sobjects.htm
+
+Q4 Does MDML Error occur when we try to update setup objects and nonsetup Objects in the same transaction in Test method
+Ans 4  Test methods allow for performing mixed Data Manipulation Language (DML) operations that include both setup sObjects and other sObjects if the code that performs the DML operations is enclosed within System.runAs method blocks. You can also perform DML in an asynchronous job that your test method calls. These techniques enable you, for example, to create a user with a role and other sObjects in the same test.
+@isTest
+private class MixedDML {
+    static testMethod void mixedDMLExample() {  
+        User u;
+        Account a;
+        User thisUser = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+       // Insert account as current user
+        System.runAs (thisUser) {
+            Profile p = [SELECT Id FROM Profile WHERE Name='Standard User'];
+            UserRole r = [SELECT Id FROM UserRole WHERE Name='COO'];
+            u = new User(alias = 'jsmith', email='jsmith@acme.com', 
+                emailencodingkey='UTF-8', lastname='Smith', 
+                languagelocalekey='en_US', 
+                localesidkey='en_US', profileid = p.Id, userroleid = r.Id,
+                timezonesidkey='America/Los_Angeles', 
+                username='jsmith@acme.com');
+            insert u;
+            a = new Account(name='Acme');
+            insert a;
+        }
+    }
+}
+
+
+Q5 How to write Mock Test class in Salesforce?
+Ans 5  Implement the interface HTTPCalloutMock,s ample code is below
+
+@isTest
+global class MockHttpResponseGenerator implements HttpCalloutMock {
+    // Implement this interface method
+    global HTTPResponse respond(HTTPRequest req) {
+        // Optionally, only send a mock response for a specific endpoint
+        // and method.
+        System.assertEquals('http://example.com/example/test', req.getEndpoint());
+        System.assertEquals('GET', req.getMethod());
+        
+        // Create a fake response
+        HttpResponse res = new HttpResponse();
+        res.setHeader('Content-Type', 'application/json');
+        res.setBody('{"example":"test"}');
+        res.setStatusCode(200);
+        return res;
+    }
+}
+
+
+Q6 What is actually Multitenant?
+Ans6  https://developer.salesforce.com/page/Multi_Tenant_Architecture
+
+Q7 What are the errors have you faced for governer Limit? What is CPU Limit access error?
+Ans7  http://sfdcfaq.blogspot.com/2013/05/what-are-different-types-of-exceptions.html
+
+Q8     Ultimate parent    without hitting Governor Limit?
+ M6      M7         M8   M9
+      \     /                  \   /
+         M3                   M4
+           \                       /
+             \                   /
+                \              /
+                 Account
+
+Q9  Why we use Helper Method?
+Ans9 ,Helper class can be use to add multiple functionalities on the same object . So next time when you have to write multiple triggers on the same object, use a Helper class to do the job.
+
+Q10 Why we can only use primitive data types as parameters in Future method?
+Ans  The reason why sObjects can’t be passed as arguments to future methods is because the sObject might change between the time you call the method and the time it executes. In this case, the future method will get the old sObject values and might overwrite them. To work with sObjects that already exist in the database, pass the sObject ID instead (or collection of IDs) and use the ID to perform a query for the most up-to-date record.
+
+
+
+
+RSystem
+
+Q1.Suppose you have 3 objects Account ,Contact and User,there is a picklist field on Account object that is Account Rating, So when you create an account record simultaneously you have create User and contact record too?
+MDML EXCEPTION WILL BE THERE so try doing it in different transactions.
+
+
+Q2 You have trigger and validation rule on a ccount object so whenever you are insert in a record you are getting an Validation error message from Trigger? How to bypass those.
+
+
+
+Q3 What are custom permission?
+https://www.biswajeetsamal.com/blog/custom-permissions-in-salesforce/
+
+Q4 We have a validation rule which says whenever you insert an opportunity the field gets if close date=today it will through an error, there is a workflow on opportunity too if opportunity name=prashank then it will update the close date field with system.today, tell me whether the record will be saved or not?
+The record will get saved successfully
+
+Q5 what is the use of reevaluate the workflow?
+If multiple workflows are there on the object, after field update its upto you you want other workflow to be evaluated or not.
+
+Q6 what is batch class?can we make a callout from batch class?
+Yes we can do, by https callout and implementing Dtabase.callout interface.
+
+Q7 Can we call future method from batch? How to execute more than 50million records by batch?What is the limit of iterable?
+No, We cannot call future methods directly from batch apex but we can call a web service from batch class and that web service can call the @future method. Also, we can call the future method from finish method in the batch class.
+
+
+
+Q8What is rendered?In Lightning ans well as Visualforce Page?
+
+Q9How to get deleted records by SOQL query?All rows and export all from data loader
+
+Q10 How to get data from java into Salesforce? How to generate the accesstoken to authenticate?
+
+Q11 How to get the count of the VF page refreshed?
+If you want to count the number of times a page is loaded. You can write an action attribute on Apex:page and invoke a controller method from it. Once invoked, you can write the logic which will update the counter by 1 in your controller.You might think – Why Constructor is not used here – because DML operations are not allowed within a constructor..Why Action Poller is not used – because that invokes itself after some designated time and might not happen immediately on page load.
+
+
+BirlaSoft
+
+Q1. What is bucket field in reports? Where to use it?
+Bucketing lets you quickly categorize report records without creating a formula or a custom field, Bucket fields can be used like any other field to sort, filter, and group your report. When you create a bucket field, you define multiple categories (buckets) used to group report values
+It can group only the below data types fields:
+1. Picklist
+2. Number
+3. Text
+
+
+Q2. How to expose your salesforce org data to webservices?
+Q3. What  is @testvisible?Which method you cannot call?
+Q4. What Testsetupmethod?Can we have multiple test method?
+Q5.  Component 1 and component 2, In both components , I have a name field ,if make change in the name field in component 1 in realtime it will change in component 2?
+Q6 In the date picker field I have to disable past date, like it is in irctc?
+Q7 I want to use the javascript code in 3 components,I need to use same code in 3 independent components without writing the code repeatedly?
+Q8 how many invocable methods we can have?
+Q9 what do you mean by asynchronous exception?
+Q10 What is lightning locker?
+Q11 how to query account detail from contact using soql?Vice versa?Can I query all contacts and opportunities  from account?
+Q12 How to use outbound messages?
+Q13 what is named credentials? what is need to named credentials?
+Q14 what is locale?
+Q15 record lock error in data loader?
+Q16 I want to write a trigger suppose I want contact and account? Whenever new contact is created on account we want a filed I want  store the count of contact?
+Q17 user 1 and user 2 same proifle, whenever a user 1 create user 2 will not be able to see it?but user 2 records can be seen and edited?
+Q18 sharing setting recalculation?
+Q19 time dependent workflow what evcalaution criteria we cannot do?
+
+
+Simppler
+
+Q1 Apex design pattern?
+Q2 How to call a batch from vf page?
+Q3 How to optimize a SOQL query?
+Q4 How to find distinct account in SOQL query depending on a field?
+Q5 What is iterator in Batch class?
+Q6 Coffee shop integration?
+
+
+
+
+
+Radicle 2nd round
+
+Q1 what is the new thing has been added to the order of execution in this release in salesforce?
+Q2 Where apex classes lies in the order of execution?
+Q3 My manager is able to see the records despite role hierarchy checkbox is not checked? Why?
+Q4 How to use group by in SOQL query ?give me an example?
+
+
+Orange
+
+Q1 Design Pattern?
+Q2 If we have a workflow and an apex class, worklow has a criteria that if if value of a field is 100 workflow will make it 1000 and apex class has a criteria that if  the value of the field is 1000 apex class throws an error?tell me whether the record will get save or not?
+Q3 We have 3 Lightning component ABC where A being the child and C being ? we are passing a value from A to C by event? Do B will get the value in the propogation?
+Q4 Difference between flow trigger and process builder?’
+Q5 How to invoke an apex class from Process Builder?
+Q6 What is the basic difference between VF and Lightning?
+Q7How to configure Jenkins, Bitbucket and ant, and deploy code from one org to another?
+Q8 How to display 70000 records on vf page?
+Q9 Differecne between database.insert and database.query locator
+
+
+
+
+
+
+
+
+
+
+
+
