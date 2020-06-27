@@ -1,0 +1,283 @@
+public without sharing class ShowAssignmentTriggerHandler implements ITriggerImpl {
+	// Grab Terriory information based on CountryPostcode
+	private List<GroupMember> insertGroupMemberList = new List<GroupMember>();
+	private List<GroupMember> deleteGroupMemberList = new List<GroupMember>();
+    private Map<String, Map<String,GroupMember>> groupMemberMap = new Map<String, Map<String,GroupMember>>();
+    private Map<String, Map<String,Case>> cueSheetMap = new Map<String, Map<String,Case>>();
+    private List<Group> reviewerGroupList = new List<Group>();
+    private Map<String,Map<String,CaseShare>> caseShareMap = new Map<String,Map<String,CaseShare>>();
+	/**
+	 * Method: doBeforeDelete
+	 *
+	 * This method is called by the SingleTriggerHandler when the before delete
+	 * trigger action occurs. 
+	 */
+	public void doBeforeDelete(List<SObject> oldObjectList, Map<Id, SObject> oldObjectMap) {
+		// TODO : add implemetation code
+	}
+	     
+	/**
+	 * Method: doBeforeInsert
+	 *
+	 * This method is called by the SingleTriggerHandler when the before insert
+	 * trigger action occurs. 
+	 */
+	public void doBeforeInsert(List<SObject> newObjectList, Map<Id, SObject> newObjectsMap) {
+		// TODO : add implemetation code
+	}
+	
+	/**
+	 * Method: doBeforeUpdate
+	 *
+	 * This method is called by the SingleTriggerHandler when the before update
+	 * trigger action occurs. 
+	 */
+	public void doBeforeUpdate(List<SObject> oldObjectList, List<SObject> newObjectList,
+							   Map<Id, SObject> oldObjectsMap, Map<Id, SObject> newObjectsMap) {
+		// TODO : add implemetation code
+	}
+	
+	/**
+	 * Method: doAfterDelete
+	 *
+	 * This method is called by the SingleTriggerHandler when the after delete
+	 * trigger action occurs. 
+	 */
+	public void doAfterDelete(List<SObject> oldObjectList, Map<Id, SObject> oldObjectMap) {
+		// TODO : add implemetation code
+	}
+	
+	/**
+	 * Method: doAfterInsert
+	 *
+	 * This method is called by the SingleTriggerHandler when the after insert
+	 * trigger action occurs. 
+	 */
+	public void doAfterInsert(List<SObject> newObjectList, Map<Id, SObject> newObjectsMap) {
+		retrieveGroupLists(newObjectList);
+		for (Show_Assignment__c showAssignment : (List<Show_Assignment__c>) newObjectList) {
+			processShowAssignmentGroups(showAssignment.Creator_Admin_Group__c,
+										showAssignment.Reviewer_Approver_Group__c,
+										showAssignment.Creator__c,
+										showAssignment.MSAdmin__c,
+										showAssignment.Reviewer__c,
+										showAssignment.Approver__c);
+		}
+			processDmlGroupMembers(JSON.serialize(insertGroupMemberList), 
+					  			   JSON.serialize(deleteGroupMemberList));
+	}
+	
+	/**
+	 * Method: doAfterUndelete
+	 *
+	 * This method is called by the SingleTriggerHandler when the after undelete
+	 * trigger action occurs. 
+	 */
+	public void doAfterUndelete(List<SObject> newObjectList, Map<Id, SObject> newObjectsMap) {
+		// TODO : add implemetation code
+	}
+	
+	/**
+	 * Method: doAfterUpdate
+	 *
+	 * This method is called by the SingleTriggerHandler when the after update
+	 * trigger action occurs. 
+	 */ 
+	public void doAfterUpdate(List<SObject> oldObjectList, List<SObject> newObjectList,
+							  Map<Id, SObject> oldObjectsMap, Map<Id, SObject> newObjectsMap) {
+		retrieveGroupLists(newObjectList);
+		Set<Id>showRecordIds = new Set<Id>();
+		for (Show_Assignment__c showAssignment : (List<Show_Assignment__c>) newObjectList) {
+			processShowAssignmentGroups(showAssignment.Creator_Admin_Group__c,
+										showAssignment.Reviewer_Approver_Group__c,
+										showAssignment.Creator__c,
+										showAssignment.MSAdmin__c,
+										showAssignment.Reviewer__c,
+										showAssignment.Approver__c);
+			showRecordIds.add(showAssignment.Show_Record__c);
+		}
+		System.debug('showRecordIds = ' + showRecordIds);
+		Map<String,List<CaseTeamMember>> caseTeamMemberMap = 
+								processCueSheetUpdates(showRecordIds);
+		System.debug('insertGroupMemberList = ' + insertGroupMemberList);
+		System.debug('deleteGroupMemberList = ' + deleteGroupMemberList);
+		processDmlGroupMembers(JSON.serialize(insertGroupMemberList), 
+					  		   JSON.serialize(deleteGroupMemberList));
+                                   
+        /**                          
+		processDmlCaseTeamMembers(JSON.serialize(caseTeamMemberMap.get('insert')), 
+    				  			  JSON.serialize(caseTeamMemberMap.get('delete'))); */
+       // For the ticket COES-3309 start                           
+       if(caseTeamMemberMap.get('delete') != null && !caseTeamMemberMap.get('delete').isEmpty()){
+    	  Database.executeBatch(new BatchToDeleteCaseTeamMembers(caseTeamMemberMap.get('delete')), 200);
+        }
+       if(caseTeamMemberMap.get('insert') != null && !caseTeamMemberMap.get('insert').isEmpty()){                          
+          Database.executeBatch(new BatchToInsertCaseTeamMembers(caseTeamMemberMap.get('insert')), 200); 
+       }
+      // For the ticket COES-3309 End                            
+       
+	}
+    
+    
+	
+	private Map<String,List<CaseTeamMember>> processCueSheetUpdates(Set<Id> showRecordIds) {
+
+		Map<String,List<CaseTeamMember>> caseTeamMemberMap = new Map<String,List<CaseTeamMember>>();
+		List<CaseTeamMember> teamMembersToInsert = new List<CaseTeamMember>();
+		List<CaseTeamMember> teamMembersToDelete = new List<CaseTeamMember>();
+		Map<Id, Map<String, String>> showAssignmentUserSetMap = new Map<Id, Map<String, String>>();
+		System.debug('showRecordIds = ' + showRecordIds);
+		Map<Id,Case> cueSheetMap = new Map<Id,Case>([SELECT Id, Show_Id__c, Status 
+													  FROM Case 
+													  WHERE Episode__r.Show__c IN :showRecordIds]);
+		System.debug('cueSheetMap = ' + cueSheetMap);		 
+		showAssignmentUserSetMap = CueSheetAccessManager.retrieveShowAssignmentByUserRoleMap(cueSheetMap.values());							
+		System.debug('showAssignmentUserSetMap = ' + showAssignmentUserSetMap);
+		Map<Id, Map<Id, CaseTeamMember>> cueSheetTeamMemberMap = 
+							CueSheetAccessManager.retrieveCueSheetTeamMemberMap(cueSheetMap);
+	    for(Id cueSheetId : cueSheetMap.keySet()) { 
+	      Case cueSheet = (Case) cueSheetMap.get(cueSheetId);
+	      teamMembersToInsert.addAll(CueSheetAccessManager.addCueSheetAccess(
+	                             cueSheet,
+	                             showAssignmentUserSetMap.get(cueSheet.Show_Id__c),
+	                             cueSheetTeamMemberMap.get(cueSheetId)));
+	      if(cueSheetTeamMemberMap.get(cueSheetId) != null) {
+	        teamMembersToDelete.addAll(CueSheetAccessManager.deleteCueSheetAccess(
+	                       showAssignmentUserSetMap.get(cueSheet.Show_Id__c).keySet(),
+	                       cueSheetTeamMemberMap.get(cueSheetId).values()));
+	      }
+	    }
+	    caseTeamMemberMap.put('insert', teamMembersToInsert);
+	    caseTeamMemberMap.put('delete', teamMembersToDelete);
+		return caseTeamMemberMap;
+	}
+	
+	private void retrieveGroupLists(List<Show_Assignment__c> showAssignmentList) {
+		List<Show__c> showList = new List<Show__c>();
+		List<String> showIds = new List<String>();
+		List<String> creatorAdminGroupNames = new List<String>();
+		List<String> reviewerGroupNames = new List<String>();
+		for (Show_Assignment__c showAssignment : showAssignmentList) {
+			showIds.add(showAssignment.Show_Record__c);
+		}
+		System.debug('showIds = ' + showIds);
+		for(Show__c show : [SELECT Id, Title_Number__c, Show_Name__c 
+							FROM Show__c 
+							WHERE Id IN :showIds]) {
+			creatorAdminGroupNames.add(ShowAssignmentGroupManager.SHOW_GROUP_PREFIX +
+								   	   show.Title_Number__c); 
+			reviewerGroupNames.add(ShowAssignmentGroupManager.REVIEWER_GROUP_PREFIX +
+								   show.Title_Number__c); 
+		}
+		System.debug('creatorAdminGroupNames = ' + creatorAdminGroupNames);
+		System.debug('reviewerGroupNames = ' + reviewerGroupNames);
+		for(GroupMember creatorAdminGroupMember : [SELECT Id, GroupId, UserOrGroupId
+					 		  	 				   FROM GroupMember
+					 		  	 				   WHERE Group.DeveloperName IN :creatorAdminGroupNames]) {
+			assignGroupMemberMap(creatorAdminGroupMember);	 	
+		}
+		for(GroupMember reviewerGroupMember : [SELECT Id, GroupId, UserOrGroupId
+					 		  	 			   FROM GroupMember
+					 		  	 			   WHERE Group.DeveloperName IN :reviewerGroupNames]) {
+			assignGroupMemberMap(reviewerGroupMember);	 	
+		
+		} 
+		System.debug('groupMemberMap = ' + groupMemberMap);
+	}
+	
+	private void assignGroupMemberMap(GroupMember member) {
+		Map<String,GroupMember> userToGroupMemberMap = 
+										groupMemberMap.get(member.GroupId);
+		if(userToGroupMemberMap == null) {
+			userToGroupMemberMap = new Map<String,GroupMember>();
+		}
+		userToGroupMemberMap.put(member.UserOrGroupId, member);
+		groupMemberMap.put(member.GroupId, userToGroupMemberMap);	 		  	 				   			
+	}
+
+	private void processShowAssignmentGroups(String creatorAdminGroupId,
+											 String reviewerApproverGroupId,
+											 String strUsersSelected,
+											 String strAdminsSelected,
+											 String strReviewersSelected,
+											 String strApproverSelected) {
+		Set<String> creatorAdminSet = new Set<String> ();
+		Set<String> reviewerApproverSet = new Set<String> ();
+		creatorAdminSet.addAll((strUsersSelected == null)
+											? strAdminsSelected.split(';')
+											: (strUsersSelected + ';' + 
+											   strAdminsSelected).split(';'));
+		reviewerApproverSet.addAll((strReviewersSelected == null)
+												? strApproverSelected.split(';')
+												: (strReviewersSelected + ';' + 
+												   strApproverSelected).split(';'));
+		Set<String> prevCreatorAdminSet = groupMemberMap.get(creatorAdminGroupId) != null
+											? groupMemberMap.get(creatorAdminGroupId).keySet()
+											: new Set<String>();
+		Set<String> prevReviewerApproverSet = groupMemberMap.get(reviewerApproverGroupId) != null
+												? groupMemberMap.get(reviewerApproverGroupId).keySet()
+												: new Set<String>();
+		processGroupMembers(creatorAdminGroupId, creatorAdminSet, prevCreatorAdminSet);	
+		processGroupMembers(reviewerApproverGroupId, reviewerApproverSet, prevReviewerApproverSet);			
+	}
+	
+	private void processGroupMembers(String groupId,
+									 Set<String> memberSet,
+									 Set<String> previousMemberSet) {
+		// check users in new that are not in previous - add to insert list
+		System.debug('memberSet = ' + memberSet);
+		for(String userId : memberSet) {
+			if(!previousMemberSet.contains(userId)) {
+				System.debug('Users to add');
+				System.debug('GroupId = ' + groupId + ' UserOrGroupId = ' + userId);
+				insertGroupMemberList.add(new GroupMember(GroupId = groupId,
+														  UserOrGroupId = userId));
+			}
+		}
+		// check users in new that are in previous but not in selection - 
+		// add to delete list
+		System.debug('previousMemberSet = ' + previousMemberSet);
+		for(String prevId : previousMemberSet) {
+				System.debug('Users to remove');
+			if(!memberSet.contains(prevId)) {
+				System.debug('GroupId = ' + groupId + ' UserOrGroupId = ' + prevId);
+				deleteGroupMemberList.add(groupMemberMap.get(groupId).get(prevId));
+			}
+		} 
+		System.debug('insertGroupMemberList = ' + insertGroupMemberList);
+		System.debug('deleteGroupMemberList = ' + deleteGroupMemberList);
+	}
+	
+	@future static void processDmlGroupMembers(String insertGroupMemberList,
+							   		  		   String deleteGroupMemberList) {
+							   		  		   	
+		if(insertGroupMemberList != null && insertGroupMemberList.length() > 0) {
+			List<GroupMember> insertGroupList = (List<GroupMember>)JSON.deserialize(insertGroupMemberList, List<GroupMember>.class);
+			System.debug('insertGroupList = ' + insertGroupList);
+			ShowAssignmentGroupManager.createGroupMember(insertGroupList);
+		}							   	
+		if(deleteGroupMemberList != null && deleteGroupMemberList.length() > 0) {
+			List<GroupMember> deleteGroupList = (List<GroupMember>)JSON.deserialize(deleteGroupMemberList, List<GroupMember>.class);
+			System.debug('deleteGroupList = ' + deleteGroupList); 
+			ShowAssignmentGroupManager.deleteGroupMember(deleteGroupList);							   	
+		} 
+	}
+	
+     
+    /**
+    @Future 
+	private static void processDmlCaseTeamMembers(String insertCaseTeamMemberList,
+							   		  			  String deleteCaseTeamMemberList) {
+		if(insertCaseTeamMemberList != null && insertCaseTeamMemberList.length() > 0) {
+			List<CaseTeamMember> insertCaseTeamList = (List<CaseTeamMember>)JSON.deserialize(insertCaseTeamMemberList, List<CaseTeamMember>.class);
+			System.debug('insertCaseTeamList = ' + insertCaseTeamList);
+			Database.insert(insertCaseTeamList, false);
+		}
+		if(deleteCaseTeamMemberList != null && deleteCaseTeamMemberList.length() > 0) {
+			List<CaseTeamMember> deleteCaseTeamList = (List<CaseTeamMember>)JSON.deserialize(deleteCaseTeamMemberList, List<CaseTeamMember>.class);
+			System.debug('deleteCaseTeamList = ' + deleteCaseTeamList);
+			delete deleteCaseTeamList;
+		}
+	} 
+    */
+}
