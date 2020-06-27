@@ -1,0 +1,21 @@
+global class BatchToInsertCaseTeamMembers implements Database.Batchable<sObject>{
+    public List<CaseTeamMember> CaseTeamMemberToInsert =  new List<CaseTeamMember>();
+    public BatchToInsertCaseTeamMembers(List<CaseTeamMember> caseTeamList){
+        CaseTeamMemberToInsert = caseTeamList ;
+        system.debug('CaseTeamMemberToInsert**'+CaseTeamMemberToInsert.size());
+    }
+    
+    global List<SObject> start(Database.BatchableContext context){
+        return CaseTeamMemberToInsert;
+    }
+    
+    global void execute(Database.BatchableContext BC,List<CaseTeamMember> scope){
+        system.debug('scope**'+scope.size());
+        insert scope;
+    }
+    
+    global void finish(Database.BatchableContext BC){
+        
+    }
+
+}
