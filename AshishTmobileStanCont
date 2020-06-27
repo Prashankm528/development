@@ -1,0 +1,106 @@
+public static void setWeeklyBoxOfficeAutoFields(Weekly_Box_Office__c wbo, Weekly_Box_Office__c previousWbo, Release__c release) {
+		try {
+			System.debug(LoggingLevel.FINE, 'setWeeklyBoxOfficeAutoFields - wbo.Weeks_In_Release__c: ' + wbo.Weeks_In_Release__c);
+			for(Integer i = 1;i < 8;i++) {
+				String autoFieldName = 'Day_' + i + '_Auto_USD__c';
+				String autoLocationsFieldName = 'Day_' + i + '_Auto_Locations__c';
+				String dayOfWeekFieldName = 'Day_' + i + '_Name__c';
+				String dayName = (String) wbo.get(dayOfWeekFieldName);
+				String dailyDropFieldName = 'Daily_Drop_' + dayName + '__c';
+				String currentSource = (String) wbo.get('Day_' + i + '_Source__c');
+				Decimal dailyDrop = release.Territory__r.get(dailyDropFieldName) == null ? 1 : (Decimal) release.Territory__r.get(dailyDropFieldName);
+				Boolean isWeekend = Boolean.valueOf(release.Territory_Opening_Day__r.get(dayName + '_Is_Weekend__c'));
+
+				if(i == 1 && dayName != release.Opening_Day__c) {
+					System.debug(LoggingLevel.FINE, 'setWeeklyBoxOfficeAutoFields - error in wbo day1 is not opening day: ' + wbo.Id);
+					return;
+				}
+				if((i == 1 && dayName != 'Monday') && previousWbo != null) {
+					Decimal thisWeekendTotal = previousWbo.Total_to_Sunday_Selected_USD__c * (1 + wbo.Weekend_Drop_Pct_IR__c / 100);
+					Decimal weekendSplit = release.Territory__r.Weekend_Split__c;
+					Decimal previousWeekLocations = (Decimal) previousWbo.get('Day_7_Locations_Selected__c');
+					Decimal previousWeekAutoLocations = (Decimal) previousWbo.get('Day_7_Auto_Locations__c');
+					if(weekendSplit == null) weekendSplit = 1;
+
+					Decimal autoValue = thisWeekendTotal * dailyDrop / weekendSplit;
+					if(currentSource == SOURCE_AUTO && isWeekend) {
+						wbo.Total_To_Sunday_Selected_USD__c = wbo.Total_To_Sunday_Selected_USD__c - (Decimal) wbo.get(autoFieldName) + autoValue;
+					}
+					if(currentSource == SOURCE_AUTO) {
+						wbo.put(autoLocationsFieldName, previousWeekAutoLocations);
+					}
+					else {
+						wbo.put(autoLocationsFieldName, previousWeekLocations);
+					}
+					wbo.put(autoFieldName, autoValue);
+                    
+				}
+				else if(i != 1 && dayName != 'Monday') {
+
+					String previousAutoFieldName = 'Day_' + (i - 1) + '_Auto_USD__c';
+					String previousSource = (String) wbo.get('Day_' + (i - 1) + '_Source__c');
+					String previouSelectedFieldName = 'Day_' + (i - 1) + '_Selected_USD__c';
+					String previousSelectedLocationsFieldName = 'Day_' + (i - 1) + '_Locations_Selected__c';
+					String previousAutoLocationsFieldName = 'Day_' + (i - 1) + '_Auto_Locations__c';
+					Decimal previousSelectedFieldValue = 0;
+					Decimal previousSelectedLocationsFieldValue = 0;
+					if(previousSource == SOURCE_AUTO && isWeekend) {
+						previousSelectedFieldValue = (Decimal) wbo.get(previousAutoFieldName);
+						previousSelectedLocationsFieldValue = (Decimal) wbo.get(previousAutoLocationsFieldName);
+					}
+					else {
+						previousSelectedFieldValue = (Decimal) wbo.get(previouSelectedFieldName);
+						previousSelectedLocationsFieldValue = (Decimal) wbo.get(previousSelectedLocationsFieldName);
+					}
+//					if (previousSelectedFieldValue == 0) continue;
+
+					String previousDayOfWeekFieldName = 'Day_' + (i - 1) + '_Name__c';
+
+					String previousDayName = (String) wbo.get(previousDayOfWeekFieldName);
+					String previousDailyDropFieldName = 'Daily_Drop_' + previousDayName + '__c';
+
+					Decimal previousDailyDrop = release.Territory__r.get(previousDailyDropFieldName) == null ? 1 : (Decimal) release.Territory__r.get(previousDailyDropFieldName);
+
+					Decimal autoValue = previousSelectedFieldValue * dailyDrop / previousDailyDrop;
+					if(currentSource == SOURCE_AUTO && isWeekend) {
+						wbo.Total_To_Sunday_Selected_USD__c = wbo.Total_To_Sunday_Selected_USD__c - (Decimal) wbo.get(autoFieldName) + autoValue;
+					}
+					wbo.put(autoFieldName, autoValue);
+					wbo.put(autoLocationsFieldName, previousSelectedLocationsFieldValue);
+                   
+				}
+				else if((dayName == 'Monday')) {
+					String previousSelectedLocationsFieldName = 'Day_' + (i - 1) + '_Locations_Selected__c';
+					String previousAutoLocationsFieldName = 'Day_' + (i - 1) + '_Auto_Locations__c';
+					Decimal previousSelectedLocationsFieldValue = 0;
+					if(i == 1) {
+						previousSelectedLocationsFieldValue = (Decimal) previousWbo.get('Day_7_Locations_Selected__c');
+					}
+					else if(currentSource == SOURCE_AUTO) {
+						previousSelectedLocationsFieldValue = (Decimal) wbo.get(previousAutoLocationsFieldName);
+					}
+					else {
+						previousSelectedLocationsFieldValue = (Decimal) wbo.get(previousSelectedLocationsFieldName);
+					}
+					Decimal thisWeekendTotal = wbo.Total_to_Sunday_Selected_USD__c * (1 + wbo.Weekend_Drop_Pct_IR__c / 100);
+					Decimal weekendSplit = release.Territory__r.Weekend_Split__c;
+					if(weekendSplit == null || weekendSplit == 0) weekendSplit = 1;
+
+					Decimal autoValue = thisWeekendTotal * dailyDrop / weekendSplit;
+					if(currentSource == 'Auto' && isWeekend) {
+						wbo.Total_To_Sunday_Selected_USD__c = wbo.Total_To_Sunday_Selected_USD__c - (Decimal) wbo.get(autoFieldName) + autoValue;
+					}
+					wbo.put(autoLocationsFieldName, previousSelectedLocationsFieldValue);
+					wbo.put(autoFieldName, autoValue);
+                  
+				}
+				System.debug(LoggingLevel.FINE, 'setWeeklyBoxOfficeAutoFields -  after loop: ');
+				System.debug(LoggingLevel.FINE, 'setWeeklyBoxOfficeAutoFields - wbo.Total_To_Sunday_Selected_USD__c: ' + wbo.Total_To_Sunday_Selected_USD__c);
+			}
+		} catch(Exception ex) {
+			System.debug(LoggingLevel.ERROR, 'setWeeklyBoxOfficeAutoFields - wbo: ' + wbo);
+			System.debug(LoggingLevel.ERROR, 'setWeeklyBoxOfficeAutoFields - release: ' + release);
+			throw ex;
+		}
+
+	}
