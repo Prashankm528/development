@@ -1,0 +1,206 @@
+/****************************************************************
+* Author          :  Prashank Varshney
+* Created Date    :  23 April 2019
+* Class Name      :  FinalTCRApproverEmailJob
+* Summary         :  Scheduling Email Template for Final TCRs  
+* Purpose         :  Send a single email to each Final TCR Approver and Territory users. 
+********************************************************************************************************************************************************/            
+/*
+* Revision History 
+*  23 April 2019 KrishnaKumar Chellan, Created
+*  06 Jan 2020 Prakash Selvam, Changed the email template.
+*  07 Jan 2020 Prakash Selvam, Added opt in / out for email in user .
+*/
+public with sharing class FinalTCRApproverEmailJob implements Database.Batchable<sObject> {
+    
+    private static Final String HQ_EMAIL = 'HQ Email';
+    private static Final String TERRITORY_EMAIL = 'Territory Email';
+    
+    //Determine the minimal set of users the batch needs to iterate over.
+    //This is defined as the sets of approvers as found in the Territory records (by approver field)
+    public Database.QueryLocator start(Database.BatchableContext BC) {  
+        
+        //Only fetch territory records where we may have an approver of interest
+        List<Territory__c> terrList = [select HQ_TCR_Approver__c,Id,Territory_TCR_Approver__c 
+                                       FROM Territory__c
+                                       where (HQ_TCR_Approver__c != null
+                                       or Territory_TCR_Approver__c != null)
+                                       and Active_Flag__c = true
+                                       and Reporting_Territory__c = true];
+        
+        //And build a unique set of users from these records
+        Set<Id> userList = new Set<Id>();
+        for(Territory__c terr: terrList){
+            if(terr.Territory_TCR_Approver__c != null){
+                userList.add(terr.Territory_TCR_Approver__c);
+            }
+            if(terr.HQ_TCR_Approver__c != null){
+                userList.add(terr.HQ_TCR_Approver__c);
+            }
+        }
+        //Added email opt in and out option as part of MRPE 322
+        String query = 'select id from user where id in:userList and Opt_In_Out_Of_Final_TCR_Email__c = true';
+        return Database.getQueryLocator(query);
+    }
+    
+    
+    public void execute(Database.BatchableContext BC, List<User> userList) {
+        
+        List<Release__c> releases;
+        List<Release__c> releases1 = new list<Release__c>();
+        String approverField;
+        
+        //Create emails for HQ approvers in the user batch
+        approverField = 'Territory__r.HQ_TCR_Approver__c';
+        releases = getReleasesByApproverField(userList,approverField);
+        for(Release__c rel : releases){
+          //Data needs to only fetch non final-TCR Release records 
+        	//with release dates approximately between FinalTCR_Range_Max__c and FinalTCR_Range_Min__c of belonging territory 
+        	// COES-3573 starts                               
+			Date FinalTcrMinDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Max__c));
+			Date FinalTCRMaxDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Min__c));
+			
+			//   Release date is between  .FinalTCR_Range_Max__c & FinalTCR_Range_Min__c  depending upon territory                                         
+            if(rel.release_date__c < FinalTCRMaxDate && rel.release_date__c > FinalTcrMinDate){    
+               	releases1.add(rel);
+            }
+           
+        }
+        // COES-3573 ends
+        generateEmails(releases1, approverField, HQ_EMAIL);
+        releases1.clear();
+        //Create emails for Territory approvers in the user batch
+        approverField = 'Territory__r.Territory_TCR_Approver__c';
+        releases = getReleasesByApproverField(userList, approverField);
+        for(Release__c rel : releases){
+            // COES-3573 starts
+            Date FinalTcrMinDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Max__c));
+			Date FinalTCRMaxDate = Date.today().addDays(-Integer.valueOf(rel.Territory__r.FinalTCR_Range_Min__c));
+			
+			//   Release date is between  .FinalTCR_Range_Max__c & FinalTCR_Range_Min__c  depending upon territory                                         
+            if(rel.release_date__c < FinalTCRMaxDate && rel.release_date__c > FinalTcrMinDate){    
+                	releases1.add(rel);
+               
+            }
+            // COES-3573 ends
+        }
+
+        generateEmails(releases1, approverField, TERRITORY_EMAIL);
+    }
+    
+    
+    //Fetch Release records, filtered by the provided approver field
+    @TestVisible
+    private static List<Release__c> getReleasesByApproverField(List<User> users, String approverField){
+       //Gettting the release records whose release date lies in last 1000 days
+        String query = 'SELECT Id,Territory__r.HQ_TCR_Approver__c, Territory__r.Territory_TCR_Approver__c,' +
+            ' name,Title__r.Name,Territory_Name__c,Territory__r.Region__c,Release_Date__c,' + 
+            ' Territory__r.FinalTCR_Range_Max__c, Territory__r.FinalTCR_Range_Min__c FROM Release__c ' +
+            ' WHERE Theatrical_Rights__c = \'Yes\'' +
+            ' AND Final_TCR__c = null ' +
+            ' AND Release_Date__c != null ' +
+            ' AND UIP_Release_Status__c = null' +
+            ' AND release_date__c  = LAST_N_DAYS:1000'+
+            ' AND Territory__r.Reporting_Territory__c = true' +
+            ' AND ' + approverField + ' in: users' +
+            ' ORDER BY Territory_Name__c,Release_Date__c';
+        return (List<Release__c>) Database.query(query);
+    }
+    
+    
+    //Iterate through the selected all-approver releases, to generate one email message per approver
+    //Each time the approver changes (between release records), start a new email message
+    @TestVisible
+    private static void generateEmails(List<Release__c> releases, String approverField, String emailType){
+        
+        if(!releases.isEmpty()) {
+            
+            //The approverField is <lookup_object>.<field_name>.
+            //So we can split the string to get our object and field
+            String[] fieldInfo = approverField.split('\\.'); //full-stop is a special character, so it requires 'escaping'
+            
+            List<Release__c> approverReleases; //list of releases for the 'current' approver
+            
+            List<Messaging.SingleEmailMessage> messages = new List<Messaging.SingleEmailMessage>();
+            
+            Id previousApprover = null; //this will cause the first iteration to start building a new message
+            Id currentRecordApprover;
+            
+            for(Release__c rel: releases){
+                currentRecordApprover = (Id)(rel.getSObject(fieldInfo[0]).get(fieldInfo[1]));
+                if(previousApprover != currentRecordApprover){
+                    //Found the next approver, so create the email...
+                    if(previousApprover != null){ //don't need to do this on the first record
+                        messages.add( createEmailMessage(approverReleases, previousApprover, emailType) ); //in this context the previousApprover is still the current one
+                    }
+                    //... and prepare for the next email
+                    previousApprover = currentRecordApprover;
+                    approverReleases = new List<Release__c>();
+                }
+                approverReleases.add(rel);
+            }
+            //And finally construct the email for the last approver found in the list
+            messages.add( createEmailMessage(approverReleases, previousApprover, emailType) ); //in this context the previousApprover is still the current one        
+            
+            Messaging.sendEmail(messages);
+        }
+    }
+    
+    
+    //Create the email message based on the list of releases for the 'current' approver
+    @TestVisible
+    private static Messaging.SingleEmailMessage createEmailMessage(list<Release__c> approverReleases, String approverId, String emailType){
+        
+        String htmlBody = '';
+        String subjectCore;
+        
+        //Switch requires literal matching, but want to use final variables
+        if(emailType == HQ_EMAIL){
+            subjectCore = 'HQ Email';
+            //Changed the email template as part of MRPE 322 
+            htmlBody += '   <P>** System generated mail communication – Frequency: Monthly ** </P>';
+            htmlBody += '   <P>Dear Users, </P>';
+            htmlBody += '   <P>A Final TCR is due for the below releases:</P>';
+        }
+        else if(emailType == TERRITORY_EMAIL){
+            subjectCore = 'Territory Email';
+            //Changed the email template as part of MRPE 322 
+            htmlBody += '   <P>** System generated mail communication – Frequency: Monthly ** </P>';
+            htmlBody += '   <P>Dear Users,</P>';  
+            htmlBody += '   <P>Your Final TCR is due for below releases. Please submit the Final TCR at your earliest convenience.</P>';            
+            htmlBody += '   <P>Magic Link: <a href = "https://magic.nbcuni.com">https://magic.nbcuni.com</a></P>';
+        }
+                
+        Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();        
+        
+        
+        htmlBody += '   <h3>Pending Final TCR :</h3></br>';
+        htmlBody += '   <table border="0" cellpadding="3" cellspacing="0" width="60%"><tr>';
+        htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Title</th>';
+        htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Territory</th>';
+        htmlBody += '   <th nowrap="nowrap" style="border: 1px solid #ccc;background-color:Lavender;" align="left">Release Date</th>';
+        
+        //Add all the release information, associated to the approver, to the email
+        for(Release__c rel: approverReleases){
+            
+            htmlBody += '   <tr><td nowrap="nowrap" style="border: 1px solid #ccc;">'+rel.Title__r.Name+'</td>';
+            htmlBody += '   <td nowrap="nowrap" style="border: 1px solid #ccc;">'+rel.Territory_Name__c+'</td>';
+            Date reldate = rel.Release_Date__c;
+            String dates = DateTime.newInstance(reldate.year(),reldate.month(),reldate.day()).format('dd-MMM-YYYY');
+            htmlBody += '   <td nowrap="nowrap" style="border: 1px solid #ccc;" align="left">'+dates+'</td>';
+        }
+        htmlBody += '   </table>';
+        
+        mail.setToAddresses(new String[]{approverId});
+       // mail.setToAddresses(new String[]{'prashank.varshney@nbcuni.com'});
+        mail.setSubject(subjectCore + ' - Final TCR  [' +system.today().format()+ ']');
+        mail.setHtmlBody(htmlBody);
+        
+        return mail;
+    }
+    
+    //the "finish" method is called once all the batches are processed 
+    public void finish(Database.BatchableContext BC) {
+        // execute any post-processing operations
+    }
+}
