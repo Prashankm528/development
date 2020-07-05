@@ -1,0 +1,564 @@
+/******************************************************************************
+@author      : IBM
+@date        : 12.06.2020
+@description : Class to Update Approver on Opportunity, an approver is fetched from Custom Metadata.
+@Version     : 1.0
+*******************************************************************************/
+public with sharing class SI_OpportunityTriggerHandler extends TriggerHandler{
+    Map<String,Id> mapUserFullnameToId = new Map<String,Id>();
+    Map<Id,List<String>> mapOppoIdToEmail = new Map<Id,List<String>>();
+    List<SI_Approver_Custom_Metadata__mdt> lstOfMetadataRecords = new List<SI_Approver_Custom_Metadata__mdt>();
+    List<SI_Contract_Custom_Metadata__mdt> lstOfContractMetadataRecords = new List<SI_Contract_Custom_Metadata__mdt>();
+    List<String> listOfEmail = new List<String>();
+    List<String> listOfKpmg = new List<String>();
+    Map<Id,String> mapOfIntakeSubmitterEmail = new Map<Id,String>();
+    String oppJSON = '';
+    public static boolean isOppTriggerExecuted = FALSE ;
+    private static final string OPP_API = 'Opprtunity';
+    public SI_OpportunityTriggerHandler() {
+        super(OPP_API);
+    }
+    /***************************************************************************************
+@Description : Return the name of the handler invoked
+****************************************************************************************/
+    public override String getName() {
+        return OPP_API;
+    }
+    /**************************************************************************************
+@Description : Trigger handlers for events
+****************************************************************************************/
+    public override  void beforeInsert(List<SObject> newItems){
+    }
+    public  override void beforeUpdate(List<SObject> newItems, Map<Id, SObject> newItemsMap, Map<Id, SObject> oldItemsMap){
+        // Calling Approver Method after TypeCast From Sobject to Opportunity instance
+        updateApproverWhenETLValuesChange((List<Opportunity>)newItems, (Map<Id,Opportunity>)oldItemsMap);
+    }
+    public  override void beforeDelete(Map<Id, SObject> oldItemsMap){
+    }
+    public  override void afterDelete(Map<Id, SObject> oldItemsMap) {
+    }
+    public  override void afterUndelete(Map<Id, SObject> oldItemsMap) {
+    }
+    public  override void afterUpdate(List<SObject> newItems, Map<Id, SObject> newItemsMap, Map < Id, SObject > oldItemsMap) {
+        /*****method call to update Location Object****/
+        updateLocationRecord((List<Opportunity>)newItems,(Map<Id,Opportunity>)oldItemsMap);
+        /*****method call to insert contract Object****/
+        createContract((List<Opportunity>)newItems,(Map<Id,Opportunity>)oldItemsMap);
+        /********method call to sendContractEmail *****/
+        sendContractEmail((List<Opportunity>)newItems,(Map<Id,Opportunity>)oldItemsMap);
+    }
+    public  override void afterInsert(List<Sobject> newItems, Map<Id, Sobject> newItemsMap) {
+    }
+    /**************************************************************************
+* @description : To update approvers on opportunity based on Levels of Metadata (before update)
+* @param       : trigger.new and trigger.oldMap
+* @return      : None
+**************************************************************************/
+    // Map<String,Id> mapUserFullnameToId = new Map<String,Id>();
+    // List<SI_Approver_Custom_Metadata__mdt> lstOfMetadataRecords = new List<SI_Approver_Custom_Metadata__mdt>();
+    public void updateApproverWhenETLValuesChange(List<Opportunity> newListOfOpportunity, Map<Id,Opportunity> oldMap){
+        Set<Id> setOfOpportunityIds = new Set<Id>();
+        for(Opportunity objOpp : newListOfOpportunity){
+            if(objOpp.ETL_MRC__c != oldMap.get(objOpp.Id).ETL_MRC__c && objOpp.ETL_NRC__c != oldMap.get(objOpp.Id).ETL_NRC__c)
+                setOfOpportunityIds.add(objOpp.Id);
+        }
+        if(!setOfOpportunityIds.isEmpty()){
+            // Name of Metadata which already created
+            String metadataName = 'SI_Approver_Custom_Metadata__mdt';
+            try{
+                // SOQL Query on Metadata to get All Records
+                List<String> listOfMetadataFields = new List<String>(Schema.getGlobalDescribe().get(metadataName).getDescribe().fields.getMap().keySet());
+                String metadataQuery = 'SELECT '+String.join(listOfMetadataFields, ',')+' FROM '+metadataName + ' order by Level__c desc NULLS Last';
+                lstOfMetadataRecords = Database.query(metadataQuery);
+            }
+            catch(Exception e){
+                System.debug('Exception in Metadata Query/Schema Metadata'+e.getMessage());
+            }
+            if(!lstOfMetadataRecords.isEmpty()){
+                Set<String> setOfUserFullName = new Set<String>();
+                for(SI_Approver_Custom_Metadata__mdt objMeta : lstOfMetadataRecords){
+                    if(String.isNotBlank(objMeta.Approver_UserName__c) && !objMeta.Approver_UserName__c.equalsIgnoreCase('NULL'))
+                        setOfUserFullName.add(objMeta.Approver_UserName__c);
+                }
+                if(!setOfUserFullName.isEmpty()){
+                    // SOQL Query on User  to get User ID  by Using User Full Name
+                    for(User objUser :  [SELECT Name FROM User WHERE Name IN: setOfUserFullName]){
+                        mapUserFullnameToId.put(objUser.Name, objUser.Id);
+                    }
+                    for(Opportunity objOpp : newListOfOpportunity){
+                        if(setOfOpportunityIds.contains(objOpp.Id)){
+                            try{
+                                // Method Calling for each Opportunity
+                                getApproversFromMetadata(objOpp);
+                            }
+                            catch(Exception e){
+                                System.debug('Exception during method calling'+e.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**************************************************************************
+* @description : To Set approvers on opportunity based on Metadata Criteria of Metadata (this is a private method)
+* @param       : Opportunity Instance
+* @return      : None
+**************************************************************************/
+    void getApproversFromMetadata(Opportunity objOpportunity){
+        Boolean hasApproverAtUpperLevel = false;
+        for(SI_Approver_Custom_Metadata__mdt objMeta : lstOfMetadataRecords){
+            if(String.isNotBlank(objMeta.Level__c)){
+                // Approvers update on Opportunity from the level 1 to 5
+                if(Integer.valueOf(objMeta.Level__c) < 6 && mapUserFullnameToId.containsKey(objMeta.Approver_UserName__c)){
+                    if(String.isNotBlank(objMeta.Team__c)){
+                        if(objMeta.Team__c == objOpportunity.Single_Intake_Team__c){
+                            if(String.isBlank(objMeta.Region__c) && String.isBlank(objMeta.Type__c))
+                                objOpportunity.put(objMeta.Approver_Field_API_Name__c,mapUserFullnameToId.get(objMeta.Approver_UserName__c));
+                            else if(String.isNotBlank(objMeta.Region__c)){
+                                if(objMeta.Region__c == objOpportunity.Region__c)
+                                    objOpportunity.put(objMeta.Approver_Field_API_Name__c,mapUserFullnameToId.get(objMeta.Approver_UserName__c));
+                            }
+                            else{
+                                if(objMeta.Type__c == objOpportunity.Type)
+                                    objOpportunity.put(objMeta.Approver_Field_API_Name__c,mapUserFullnameToId.get(objMeta.Approver_UserName__c));
+                            }
+                        }
+                    }
+                    else
+                        objOpportunity.put(objMeta.Approver_Field_API_Name__c,mapUserFullnameToId.get(objMeta.Approver_UserName__c));
+                }
+                else {
+                    // Approvers update on Opportunity from the level 6 to so on (6-8 according to metadata)
+                    Decimal etlMinValue = 0.00;
+                    Decimal etlMaxValue = 0.00;
+                    Decimal oppEtlTotal = objOpportunity.ETL_Total__c;
+                    
+                    if(String.isNotBlank(objMeta.ETL_Value_Min__c))
+                        etlMinValue = Decimal.valueOf(objMeta.ETL_Value_Min__c).setScale(2);
+                    if(String.isNotBlank(objMeta.ETL_Value_Max__c))
+                        etlMaxValue = Decimal.valueOf(objMeta.ETL_Value_Max__c).setScale(2);
+                    if((hasApproverAtUpperLevel && !objMeta.Approver_UserName__c.equalsIgnoreCase('NULL')) ||
+                       (etlMinValue <= oppEtlTotal && String.isNotBlank(objMeta.ETL_Value_Max__c) &&
+                        etlMaxValue > oppEtlTotal) && mapUserFullnameToId.containsKey(objMeta.Approver_UserName__c)){
+                            
+                            hasApproverAtUpperLevel = true;
+                            objOpportunity.put(objMeta.Approver_Field_API_Name__c, mapUserFullnameToId.get(objMeta.Approver_UserName__c));
+                        }
+                    else if(!hasApproverAtUpperLevel) {
+                        objOpportunity.put(objMeta.Approver_Field_API_Name__c, null);
+                    }
+                }
+            }
+        }
+    }
+/**************************************************************************
+* @description : Method to Update Location Records related to Contract Sites.
+* @param       : trigger.new and trigger.oldMap
+* @return      : None
+**************************************************************************/
+    public void updateLocationRecord(List<Opportunity> newListOfOpportunity,Map<Id,Opportunity> oldItemMap){
+        Set<Id> setOfOpportunityIds = new Set<Id>();
+        List<Opportunity> cmsToUpadete = new List<Opportunity>();
+        List<Location_ID__c> listOfLocationIdToUpdate = new List<Location_ID__c>();
+        //fetch Opportunity RecordType Id
+        Id strOppBackhaulRT= SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_Backhaul_ContractRT);
+        for(Opportunity objOpp : newListOfOpportunity){
+            // If stage name changed to Closed Contract-Executed
+            if((objOpp.RecordTypeId == strOppBackhaulRT)&&(objOpp.StageName == System.Label.SI_OppStageName)&&(objOpp.StageName != oldItemMap.get(objOpp.Id).StageName)){
+                setOfOpportunityIds.add(objOpp.id);
+            }
+        }
+        if(!setOfOpportunityIds.isEmpty()){
+            //Query contract site
+            List<Contract_Site__c> listOfContractSiteToOpportunity = [SELECT Macro_Deselect__c,Location_ID__r.CMG_Working_Status__c,
+                                                                      Opportunity__r.Document_Type__c,Location_ID__r.AAV_Status__c ,
+                                                                      Location_ID__r.Eligibility_Status__c FROM Contract_Site__c
+                                                                      WHERE Opportunity__c IN : setOfOpportunityIds AND Macro_Deselect__c = false LIMIT 50000];
+            if(!listOfContractSiteToOpportunity.isEmpty()){
+                for(Contract_Site__c objContractSite : listOfContractSiteToOpportunity){
+                    if(String.isNotBlank(objContractSite.Location_ID__c)){
+                        //If opportunity document type not equal to LOI ,else opportunity document type  equal to LOI
+                        if(objContractSite.Opportunity__r.Document_Type__c != System.Label.SI_OppDocumentType){
+                            Location_ID__c objLocation = new Location_ID__c();
+                            objLocation.id = objContractSite.Location_ID__c;
+                            objLocation.AAV_Status__c= System.Label.SI_Location_AVV_Status;
+                            objLocation.CMG_Working_Status__c = System.Label.SI_LocationCMGWorkingStatus.split(';')[0];
+                            listOfLocationIdToUpdate.add(objLocation);
+                        }else if (objContractSite.Opportunity__r.Document_Type__c == System.Label.SI_OppDocumentType){
+                            Location_ID__c objLocation = new Location_ID__c();
+                            objLocation.id = objContractSite.Location_ID__c;
+                            objLocation.AAV_Status__c = System.Label.SI_Location_AVV_Status;
+                            //If contract site location eligibility status,else Ineligible
+                            if(objContractSite.Location_ID__r.Eligibility_Status__c == System.Label.SI_LocationEligibilityStatus.split(';')[0]){
+                                objLocation.CMG_Working_Status__c = System.Label.SI_LocationCMGWorkingStatus.split(';')[1];
+                            }else if(objContractSite.Location_ID__r.Eligibility_Status__c == System.Label.SI_LocationEligibilityStatus.split(';')[1]){
+                                objLocation.CMG_Working_Status__c = System.Label.SI_LocationCMGWorkingStatus.split(';')[2];
+                            }
+                            listOfLocationIdToUpdate.add(objLocation);
+                        }
+                    }
+                    if(!listOfLocationIdToUpdate.isEmpty()){
+                        try{
+                            //update loaction records
+                            update listOfLocationIdToUpdate;
+                        }
+                        catch(Exception e){
+                            System.debug('The following exception has occurred: ' + e.getMessage());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    /**************************************************************************
+* @description : Method to contract records from opportunity if SI saving records are available(after update).
+* @param       : trigger.new and trigger.oldMap
+* @return      : None
+**************************************************************************/
+    public void createContract(List<Opportunity> newListOfOpportunity,Map<Id,Opportunity> oldItemMap){
+        Set<ID> setOppId = new Set<ID>();
+        List<Contract> lstContract = new List<Contract>();
+        List<Opportunity> lstOpportunityUpdate = new  List<Opportunity>();
+        Map<Id,Id> mapOppIdVSContractID = new Map<Id,Id>();
+        Map<Id,Contract>  mapOppIdVSContract = new  Map<Id,Contract>();
+        List<SI_Savings_Tracker__c> lstSavingTracker = new  List<SI_Savings_Tracker__c>();
+        //Fetch Opportunity RecordType Id
+        Id strOppBackhaulRT= SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_OpportunityRT.split(';')[0]);
+        Id strOppCoreRetailRT= SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_OpportunityRT.split(';')[1]);
+        Id strOppInterVoiceRT= SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_OpportunityRT.split(';')[2]);
+        Id strContractRT = SI_UtilityClass.getRecordTypeIdByName('Contract',System.Label.SI_ContractRT.split(';')[0]);
+        //Iterate over list of new opportunity
+        for(Opportunity objOpp : newListOfOpportunity){
+            // If stage name changed to Closed Contract-Executed
+            if(objOpp.StageName == System.Label.SI_OppStageName && objOpp.StageName != oldItemMap.get(objOpp.Id).StageName){
+                setOppId.add(objOpp.Id);
+            }
+        }
+        if(!setOppId.isEmpty()){
+            //Query opportunity and SI Saving tracker records
+            List<Opportunity> lstOpportunity = [SELECT File_Name__c,Contract_Start_Date__c,Term_mo__c,Document_Type__c,
+                                                Secondary__c,Region__c,OwnerId,AccountId,Total_NRC__c,SOX_NRC__c,
+                                                SOX_MRC_backhaul__c,SOX_MRC_CORE_Retail__c,SOX_MRC__c,SOX_Total_backhaul__c,
+                                                SOX_Total_Retail_CORE__c,SOX_Total__c,ETL_NRC__c,RecordTypeId,ETL_MRC__c,
+                                                ETL_Total__c,Contract_ID__c,CPM_Tracker_ID__c,
+                                                (SELECT Contract__c,Opportunity__c FROM SI_Savings_Trackers__r )
+                                                FROM Opportunity WHERE id IN : setOppId LIMIT 50000];
+            if(!lstOpportunity.isEmpty()){
+                for(Opportunity opp : lstOpportunity){
+                    //Opportunity SI Savings Trackers records should not be empty
+                    if(!opp.SI_Savings_Trackers__r.isEmpty()){
+                        Contract objContract = new Contract();
+                        objContract.Status = System.label.SI_OppContractStatus.split(';')[0];
+                        objContract.RecordTypeId = strContractRT;
+                        objContract.Name = opp.File_Name__c;
+                        objContract.StartDate = opp.Contract_Start_Date__c;
+                        objContract.ContractTerm = integer.valueOf(opp.Term_mo__c);
+                        objContract.Document_Type__c = opp.Document_Type__c;
+                        objContract.Secondary__c = opp.Secondary__c;
+                        objContract.Region__c = opp.Region__c;
+                        objContract.OwnerId = opp.OwnerId;
+                        objContract.AccountId = opp.AccountId;
+                        if(opp.RecordTypeId == strOppBackhaulRT ){
+                            //Opportunity record type is backhaul
+                            objContract.SOX_NRC__c = opp.Total_NRC__c;
+                            objContract.SOX_MRC__c = opp.SOX_MRC_backhaul__c;
+                            objContract.SOX_Total__c = opp.SOX_Total_backhaul__c;
+                        }else if(opp.RecordTypeId == strOppCoreRetailRT){
+                            //Opportunity record type is VICC core & retail
+                            objContract.SOX_NRC__c = opp.Total_NRC__c;
+                            objContract.SOX_MRC__c = opp.SOX_MRC_CORE_Retail__c;
+                            objContract.SOX_Total__c = opp.SOX_Total_Retail_CORE__c;
+                        }else if(opp.RecordTypeId == strOppInterVoiceRT){
+                            //Opportunity record type is VICC inter & voice
+                            objContract.SOX_NRC__c = opp.SOX_NRC__c;
+                            objContract.SOX_MRC__c = opp.SOX_MRC__c;
+                            objContract.SOX_Total__c = opp.SOX_Total__c;
+                        }
+                        objContract.ETL_NRC__c = opp.ETL_NRC__c;
+                        objContract.ETL_MRC__c = opp.ETL_MRC__c;
+                        objContract.ETL_Total__c = opp.ETL_Total__c;
+                        objContract.Contract_ID__c = opp.Contract_ID__c;
+                        objContract.CPM_Tracker_ID__c = opp.CPM_Tracker_ID__c;
+                        //Map to put opportunity id VS contract object
+                        mapOppIdVSContract.put(opp.Id,objContract);
+                        //List to add SI saving tracker records
+                        lstSavingTracker.addAll(opp.SI_Savings_Trackers__r);
+                    }
+                }
+                if(!mapOppIdVSContract.isEmpty()){
+                    try{
+                        //insert contract records
+                        Database.insert(mapOppIdVSContract.values(), false);
+                        //Map to store successful contract records
+                        Map<Id,Contract> mapTempOppIdVSContract = new Map<Id,Contract>();
+                        //Iterate through map of opportunity ids
+                        for(Id oppId : mapOppIdVSContract.keySet()){
+                            if(String.isNotBlank(mapOppIdVSContract.get(oppId).Id)){
+                                mapTempOppIdVSContract.put(oppId,mapOppIdVSContract.get(oppId));
+                            }
+                        }
+                        if(!mapTempOppIdVSContract.isEmpty()){
+                            //Reinitialize map to store only successful records
+                            mapOppIdVSContract = new Map<Id,Contract>();
+                            mapOppIdVSContract.putAll(mapTempOppIdVSContract);
+                            //Iterate through contract records
+                            for(Contract objContractUpdate : mapOppIdVSContract.values()){
+                                objContractUpdate.Status = System.label.SI_OppContractStatus.split(';')[1];
+                            }
+                            //update newly inserted contract with status value activated
+                            update mapOppIdVSContract.values();
+                            //Iterate through map of opportunity ids
+                            for(Id oppId : mapOppIdVSContract.keySet()){
+                                if(String.isNotBlank(mapOppIdVSContract.get(oppId).Id)){
+                                    mapOppIdVSContractID.put(oppId,mapOppIdVSContract.get(oppId).Id);
+                                }
+                            }
+                            if(!mapOppIdVSContractID.isEmpty()){
+                                //Iterate through SI Savings Tracker records
+                                for(SI_Savings_Tracker__c objSavingTracker : lstSavingTracker){
+                                    if(mapOppIdVSContractID.containsKey(objSavingTracker.Opportunity__c)){
+                                        objSavingTracker.Contract__c = mapOppIdVSContractID.get(objSavingTracker.Opportunity__c);
+                                    }
+                                }
+                                if(!lstSavingTracker.isEmpty()){
+                                    //update SI Savings Tracker records with newly created Contract
+                                    update lstSavingTracker;
+                                }
+                                //Iterate through SI Savings Tracker records
+                                for(Id oppId : mapOppIdVSContractID.keySet()){
+                                    if(mapOppIdVSContractID.containsKey(oppId)){
+                                        Opportunity objOpportunity = new Opportunity();
+                                        objOpportunity.Id = oppId;
+                                        objOpportunity.ContractId = mapOppIdVSContractID.get(oppId);
+                                        lstOpportunityUpdate.add(objOpportunity);
+                                    }
+                                }
+                                if(!lstOpportunityUpdate.isEmpty()){
+                                    //update opportunity records with newly created contract
+                                    update lstOpportunityUpdate;
+                                }
+                            }
+                        }
+                    }
+                    catch(DmlException ex){
+                        System.debug('The following exception has occurred:'+ex.getMessage());
+                    }
+                    catch(Exception ex){
+                        System.debug('The following exception has occurred:'+ex.getMessage());
+                    }
+                }
+            }
+        }
+    }
+    
+    /**************************************************************************
+    * @description : Method to Send Contract.
+    * @param       : trigger.new and trigger.oldMap
+    * @return      : None
+    **************************************************************************/  
+    // for KPMG email ONLY when Upload Required is true on Opportunity 
+    Map<Id,String> mapOfOppIdToKPMGEmailForUpload = new Map<Id,String>(); 
+    public void sendContractEmail(List<Opportunity> newListOfOpportunity,Map<Id,Opportunity> oldItemMap){
+        Set<ID> setOppId = new Set<ID>();
+        Set<Id> setOfOppIdsWithUpload = new Set<Id>();
+        //Iterate over list of new opportunity
+        system.debug('>>>newList'+newListOfOpportunity);
+        for(Opportunity objOpp : newListOfOpportunity){
+            // If stage name changed to Closed Contract-Executed
+            if(objOpp.StageName != oldItemMap.get(objOpp.Id).StageName && objOpp.StageName == System.label.SI_OppStageName){ 
+                setOppId.add(objOpp.Id);
+                if(objOpp.TCM_Upload_Required__c){
+                    setOfOppIdsWithUpload.add(objOpp.Id);
+                }
+            }        
+        }
+        if(!setOppId.isEmpty()){
+            Map<String,List<Sobject>> mapOppIdToAttachmentDocuSign;
+            if(!setOfOppIdsWithUpload.isEmpty()){
+                mapOppIdToAttachmentDocuSign = new Map<String,List<Sobject>>();
+                for(Attachment objAttachment : [SELECT ParentId FROM Attachment WHERE ParentID IN: setOfOppIdsWithUpload ORDER BY CreatedDate DESC LIMIT 1]){
+                    mapOppIdToAttachmentDocuSign.put(objAttachment.ParentId, new List<SObject>{objAttachment});
+                }
+                for(dsfs__DocuSign_Status__c objDocuSignStatus : [SELECT dsfs__Opportunity__c,Name,dsfs__Envelope_Status__c From
+                                                                  dsfs__DocuSign_Status__c WHERE dsfs__Opportunity__c IN: setOfOppIdsWithUpload AND 
+                                                                  dsfs__Envelope_Status__c =: System.Label.SI_sendContractStatus ORDER BY 
+                                                                  dsfs__Completed_Date_Time__c DESC LIMIT 2]){
+                    
+                    if(mapOppIdToAttachmentDocuSign.containsKey(objDocuSignStatus.dsfs__Opportunity__c)){
+                        mapOppIdToAttachmentDocuSign.get(objDocuSignStatus.dsfs__Opportunity__c).add(objDocuSignStatus);
+                    }
+                    else{
+                        mapOppIdToAttachmentDocuSign.put(objDocuSignStatus.dsfs__Opportunity__c, new List<Sobject>{objDocuSignStatus});
+                    }
+                }
+            }
+            
+            system.debug('>>>SetOppId'+setOppId);
+            // Name of Metadata which already created
+            String metadataName = 'SI_Contract_Custom_Metadata__mdt';
+            try{
+                // SOQL Query on Metadata to get All Records
+                List<String> listOfMetadataFields = new List<String>(Schema.getGlobalDescribe().get(metadataName).getDescribe().fields.getMap().keySet());
+                String metadataQuery = 'SELECT '+String.join(listOfMetadataFields, ',')+' FROM '+metadataName ;
+                lstOfContractMetadataRecords = Database.query(metadataQuery);
+                system.debug('>>>>lstOfContractMetadataRecords'+lstOfContractMetadataRecords);
+            }
+            catch(Exception e){
+                System.debug('Exception in Metadata Query/Schema Metadata'+e.getMessage());
+            }
+            if(!lstOfContractMetadataRecords.isEmpty()){
+                for(Opportunity objOpp : [SELECT Intake_Request_Submitter__c,Vendor_Contact__c,Intake_Request_Submitter__r.Email,Vendor_Contact__r.Email FROM Opportunity Where Id IN: setOppId]){
+                    if(String.isNotBlank(objOpp.Intake_Request_Submitter__c))
+                        mapOppoIdToEmail.put(objOpp.Id,new List<String>{objOpp.Intake_Request_Submitter__r.Email});
+                    if(String.isNotBlank(objOpp.Vendor_Contact__c)){
+                        if(mapOppoIdToEmail.containsKey(objOpp.Id)){
+                            mapOppoIdToEmail.get(objOpp.Id).add(objOpp.Vendor_Contact__r.Email);
+                        }
+                        else{
+                            mapOppoIdToEmail.put(objOpp.Id,new List<String>{objOpp.Vendor_Contact__r.Email});
+                        }
+                    }
+                }
+                System.debug('mapOppoIdToEmail'+mapOppoIdToEmail);
+                for(Opportunity objOpp : newListOfOpportunity){
+                    if(setOppId.contains(objOpp.Id)){
+                        try{
+                            //fill Map with IntakeSubmitter Email
+                            mapOfIntakeSubmitterEmail.put(objOpp.id,objOpp.Intake_Request_Submitter__c);
+                            // Method Calling for each Opportunity
+                            getEmailAddressFromMetaData(objOpp);
+                            //Convert Opportunity object to JSON
+                            oppJSON = JSON.serialize(objOpp);
+                        }
+                        catch(Exception e){
+                                System.debug('Exception during method calling'+e.getMessage());
+                        }
+                    }
+                }
+                //Calling future Method
+                sendEmail(listOfEmail,oppJSON);
+            }
+        }
+    }
+    /**************************************************************************
+    * @description : Method to get emails from custom meta data
+    * @param       :  Opportunity
+    * @return      : None
+    **************************************************************************/    
+    void getEmailAddressFromMetaData(Opportunity objOpp){
+        // Deserialize Json Sting to Opportunity
+        system.debug('>>>>opportunityId'+objOpp);
+        //fetch Opportunity RecordType Id
+        Id strOppVICCRT = SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_OpportunityRT.Split(';')[2]); 
+        Id strOppBackhauRT = SI_UtilityClass.getRecordTypeIdByName('Opportunity',System.Label.SI_OpportunityRT.Split(';')[0]); 
+        system.debug('>>>>>>'+lstOfContractMetadataRecords);
+        for(SI_Contract_Custom_Metadata__Mdt objMeta : lstOfContractMetadataRecords){
+            System.debug('>>>>'+objMeta);
+            // Get emails from Meta Data 
+            //if((!String.isBlank(objMeta.Team__c)) && (!String.isBlank(objMeta.Type__c))){
+                System.debug('>>>CheckTeamAndRegion');
+                if(objMeta.Team__c == objOpp.Single_Intake_Team__c && objMeta.Type__c == objOpp.Type){ 
+                    System.debug('>>>Contract_Only_emails__c'+ObjMeta.Contract_Only_emails__c);  
+                    listOfEmail.add(objMeta.Contract_Only_emails__c);
+                    if(!String.isBlank(ObjMeta.KPMG_Email__c)){
+                        System.debug('>>>CheckTeamAndRegion');
+                        listOfKpmg.add(ObjMeta.KPMG_Email__c);
+                        
+                        // ONLY for Upload required is true
+                        if(objOpp.TCM_Upload_Required__c){
+                            mapOfOppIdToKPMGEmailForUpload.put(objOpp.Id, ObjMeta.KPMG_Email__c);
+                        }
+                    }
+                    if(mapOppoIdToEmail.containsKey(objOpp.id)){
+                        listOfEmail.addAll(mapOppoIdToEmail.get(objOpp.id)); 
+                    }
+                }
+            //}   
+            else if(objOpp.RecordTypeId == strOppBackhauRT){
+                System.debug('>>>>>i m 2');
+                if((!String.isBlank(objMeta.Team__c)) && (!String.isBlank(objMeta.Region__c))){
+                   System.debug('>>>CheckTeamAndRegion');
+                   if(objMeta.Team__c == objOpp.Single_Intake_Team__c && (objMeta.Region__c)== objOpp.Region__c){   
+                        listOfEmail.add(objMeta.Contract_Only_emails__c);
+                        if(!String.isBlank(ObjMeta.KPMG_Email__c)){
+                            listOfKpmg.add(ObjMeta.KPMG_Email__c);
+
+                            // ONLY for Upload required is true
+                            if(objOpp.TCM_Upload_Required__c){
+                                mapOfOppIdToKPMGEmailForUpload.put(objOpp.Id, ObjMeta.KPMG_Email__c);
+                            }
+                        }
+                        if(mapOppoIdToEmail.containsKey(objOpp.id)){
+                            listOfEmail.addAll(mapOppoIdToEmail.get(objOpp.id)); 
+                        }
+                    }
+                }       
+            }
+            System.debug('>>>>>>kpmgEmail'+listOfKpmg); 
+        }   
+    }
+    /**************************************************************************
+    * @description : Method to Send Email with @Future context
+    * @param       : EmailList , Opportunity
+    * @return      : None
+    **************************************************************************/   
+    @future
+    static void sendEmail(List<String>listOfEmail,String oppJson){
+         system.debug('>>>StringJSON'+oppJson);
+        Opportunity objOpp = (Opportunity) JSON.deserialize(oppJson,Opportunity.class);
+        system.debug('>>>>>oppObj'+objOpp);       
+        system.debug('>>>>ListOfEmail'+listOfEmail);
+        //List<dsfs__DocuSign_Status__c>Id idOfDousignStatus = [SELECT id,dsfs__Opportunity__c,dsfs__Envelope_Status__c,dsfs__Subject__c From dsfs__DocuSign_Status__c WHERE dsfs__Opportunity__c = '006P000000BaNyY' AND dsfs__Envelope_Status__c = 'Completed' AND dsfs__Subject__c =: System.label.SI_ContractTitle ORDER BY dsfs__Completed_Date_Time__c DESC LIMIT 1].Id;
+        //Get id of Docusign Status Object 
+        Id idOfDousignStatus = [SELECT id,dsfs__Opportunity__c,dsfs__Envelope_Status__c,dsfs__Subject__c From dsfs__DocuSign_Status__c WHERE dsfs__Opportunity__c =: objOpp.id AND dsfs__Envelope_Status__c = 'Completed' ORDER BY dsfs__Completed_Date_Time__c DESC LIMIT 1].Id;
+        System.debug('>>>>listOfContracts'+idOfDousignStatus);
+        //Get id from ContentDocumentLinkid
+        Id ContentDocumentLinkid = [SELECT ContentDocumentId,ContentDocument.Title,ContentDocument.CreatedDate,LinkedEntityId FROM ContentDocumentLink WHERE LinkedEntityId =:idOfDousignStatus].ContentDocumentId;
+        //System.debug('>>>>conId'+ContentDocumentLinkid [0].ContentDocumentID);
+        system.debug('>>>'+ContentDocumentLinkid);
+        //List of Attachements
+        List<Messaging.Emailfileattachment> fileAttachments = new List<Messaging.Emailfileattachment>(); 
+                for(ContentVersion objAtt : [SELECT VersionData,Title FROM ContentVersion WHERE ContentDocumentId =:ContentDocumentLinkid AND IsLatest = true]){
+                    SYSTEM.DEBUG('>>>>>A'+objAtt);
+                    if(objAtt.Title == System.label.SI_ContractTitle){
+                        // Add to attachment file list
+                        Messaging.Emailfileattachment efa = new Messaging.Emailfileattachment();
+                        efa.setFileName(objAtt.Title);
+                        efa.setBody(objAtt.VersionData);
+                        fileAttachments.add(efa);
+                    }     
+               }
+               system.debug('>>>fileAttachments'+fileAttachments);
+               // Create a master list to store the emails that we will send
+               List<Messaging.SingleEmailMessage> masterListMails = new List<Messaging.SingleEmailMessage>();
+               // Get the Email Template 
+               EmailTemplate emailTemplate = [Select Id,Subject,Description,DeveloperName,Body FROM EmailTemplate WHERE DeveloperName =: System.Label.SI_EmailTemplate];
+               system.debug('>>>>emailTemplate'+emailTemplate);
+               //Get Account name from opportunity
+               String accountName = [SELECT account.name FROM Opportunity WHERE id = : ObjOpp.id].Account.Name;
+               //Get Envelope Id
+               String envelopeId = [SELECT  Name FROM  dsfs__DocuSign_Status__c WHERE dsfs__Opportunity__c =: objOpp.id AND dsfs__Envelope_Status__c = 'Completed' ORDER BY dsfs__Completed_Date_Time__c DESC LIMIT 1].Name;
+               system.debug('>>>>accountName'+accountName);
+               //Replace some Data in Email Template
+               String emailBody = emailTemplate.Body;
+               emailBody = emailBody.replace('{!dsfs__DocuSign_Status__c.dsfs__DocuSign_Envelope_ID__c}',envelopeId);
+               emailBody = emailBody.replace('{!Account.Name}',accountName);
+               // Define the email
+               Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+               email.setToAddresses(listOfEmail);
+               email.setTemplateId(emailTemplate.id);
+               email.setPlainTextBody(emailBody);
+               email.setFileAttachments(fileAttachments);
+               email.setSubject(emailTemplate.Subject);
+               system.debug('>>>>emailSend'+email); 
+               try{
+                  Messaging.Email[] sendEmail = new Messaging.Email[]{email};
+                  system.debug('>>>>>sendeMAIL'+sendEmail);
+                  //Messaging.sendEmail(sendEmail);
+               }catch(Exception e){
+                   System.debug('Exception during send Email'+e.getMessage());
+               }
+      }
+ }
