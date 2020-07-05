@@ -1,0 +1,5 @@
+trigger SI_OpportunityTrigger on Opportunity (before insert, before update, before delete, after insert, after update, after delete, after undelete) {
+    public static string triggerName ='SI_OpportunityTrigger';   
+    SI_OpportunityTriggerHandler oppHandlerObj = new SI_OpportunityTriggerHandler();
+    TriggerDispatcher.run(oppHandlerObj);
+}
