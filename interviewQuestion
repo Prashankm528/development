@@ -1160,6 +1160,41 @@ Monitoring Tools: What tools or methods do you use to monitor and audit integrat
 Compliance Standards: How do you ensure Salesforce implementations comply with industry-specific regulations?
 
 
+⚡ LWC Advanced Questions
+
+✅ How does the reactivity system in LWC differ from traditional JavaScript frameworks like React or Angular?
+✅ Explain the lifecycle of an LWC component and how it differs from Aura components.
+✅ How would you optimize LWC performance when handling large datasets in a UI table?
+✅ What are the different ways to handle parent-child communication in LWC, and when would you use each?
+✅ Explain the role of @api, @track, and @wire and their use cases.
+✅ How does the shadow DOM impact styling in LWC, and how can you override it?
+✅ How can you use slots in LWC for building reusable components?
+✅ What security considerations should you take when working with third-party libraries in LWC?
+✅ How does LWC handle event bubbling and how can you stop event propagation?
+✅ How do you ensure LWC components are migratable across different Salesforce orgs?
+
+⚡ Lightning Data Service (LDS) Advanced Questions
+
+✅ How does LDS improve performance over Apex-based data retrieval?
+✅ What are the limitations of LDS, and when should you use Apex instead?
+✅ How does LDS caching work, and how can you force a cache refresh?
+✅ What are the different record access scopes in LDS, and how do they impact data retrieval?
+✅ How does LDS handle security and field-level permissions?
+✅ Explain how LDS interacts with record-edit forms and custom data handlers.
+
+⚡ Architect-Level Super-Advanced Questions
+
+✅ How would you design an enterprise-level LWC architecture to support multiple teams working on different modules of a Salesforce app?
+✅ How do you implement micro-frontends in Salesforce using LWC?
+✅ How can you leverage Lightning Message Service (LMS) for cross-component communication in a large-scale application?
+✅ What design patterns would you use to structure LWC components for scalability and maintainability in a multi-cloud Salesforce implementation?
+
+TCS interview Question -->
+
+Create a Lightning Web Component (LWC) to create a new User in Salesforce, while ensuring the created User has the necessary permissions to view Account records.
+How would you implement it ?
+
+
 
 
 
