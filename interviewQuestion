@@ -1136,6 +1136,29 @@ Q7How to configure Jenkins, Bitbucket and ant, and deploy code from one org to a
 Q8 How to display 70000 records on vf page?
 Q9 Differecne between database.insert and database.query locator
 
+JP Morgan:
+
+🔹 Salesforce Admin Questions
+Data Management: How would you approach data migration and ensure data integrity during the process?
+Security Measures: What strategies would you employ to prevent data leakage and unauthorized data export in Salesforce?
+Customization: Can you explain the process of creating and managing custom objects and fields in Salesforce?
+User Management: How do you handle user provisioning and ensure appropriate access levels are maintained?
+Automation Tools: What are Workflow Rules and how do they differ from Process Builder?
+
+🔹 Salesforce Development Questions
+Apex Programming: Can you discuss the best practices for writing efficient and scalable Apex code?
+Integration Techniques: How would you implement callouts to external services in Apex?
+Error Handling: What methods do you use for exception handling in Apex?
+Testing Framework: How do you ensure your Apex tests are robust and provide adequate coverage?
+Visualforce vs. Lightning: What are the key differences between Visualforce and Lightning components?
+
+🔹 Salesforce Security & Integration Questions
+Authentication Protocols: How does Single Sign-On (SSO) enhance security in Salesforce?
+Data Encryption: What options are available in Salesforce for encrypting sensitive data?
+API Security: How do you secure RESTful APIs in Salesforce?
+Monitoring Tools: What tools or methods do you use to monitor and audit integration activities?
+Compliance Standards: How do you ensure Salesforce implementations comply with industry-specific regulations?
+
 
 
 
