@@ -1194,6 +1194,33 @@ TCS interview Question -->
 Create a Lightning Web Component (LWC) to create a new User in Salesforce, while ensuring the created User has the necessary permissions to view Account records.
 How would you implement it ?
 
+💡 Asynchronous Apex (Future, Queueable, Batch, Scheduled):
+
+1️⃣ What are the key differences between Queueable Apex and Batch Apex beyond just the chaining limitations?
+2️⃣ How does Queueable Apex handle stateful transactions, and what are its implications in multi-threaded environments?
+3️⃣ Can you explain the transaction boundary differences between Batch Apex and Future methods?
+4️⃣ How does the flex queue work, and how can we manipulate the order of queued jobs dynamically?
+5️⃣ What are the scenarios where Batch Apex heap size limits can cause failures, and how can we mitigate them?
+6️⃣ How does the concurrency model of Scheduled Apex differ from that of Queueable Apex?
+7️⃣ How would you implement a re-try mechanism for failed Queueable Apex jobs?
+8️⃣ What is the best strategy for handling limits in long-running Async Apex processes?
+9️⃣ Can we use callouts in Batch Apex? If yes, how do we ensure proper error handling and retries?
+🔟 What happens when a future method is called inside a Queueable job?
+
+💡 General Advanced Apex:
+
+1️⃣1️⃣ What are the differences between Apex Transactions and Database Transactions, and how does it impact rollback scenarios?
+1️⃣2️⃣ How does Apex handle governor limits in multi-threaded async execution?
+1️⃣3️⃣ What happens if a DML operation fails in an Async Apex job? How can we ensure data integrity?
+1️⃣4️⃣ Explain the concept of continuations in Apex. How do they work under the hood?
+1️⃣5️⃣ What are Platform Events and how can we use them to trigger Async Apex processing?
+1️⃣6️⃣ How would you architect a massive data processing job with minimal impact on Salesforce limits?
+1️⃣7️⃣ Can you explain the internal working of the System.enqueueJob() method?
+1️⃣8️⃣ What is the role of Database.Stateful in Batch Apex, and when should it be avoided?
+1️⃣9️⃣ How can we use Event Monitoring Logs to debug async Apex issues?
+2️⃣0️⃣ What are some common pitfalls when working with Async Apex in large-scale Salesforce implementations?
+
+
 
 
 
