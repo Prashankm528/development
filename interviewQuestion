@@ -1221,6 +1221,74 @@ How would you implement it ?
 2️⃣0️⃣ What are some common pitfalls when working with Async Apex in large-scale Salesforce implementations?
 
 
+All Interview Questions:
+
+How to create a datatable fetching 10 opportunity records?
+How to prevent user from deleting the last record in datatable?
+How to ensure that the Account has one related opportunity?
+Brief the structure of batch apex?
+How to pass data from one batch to another batch in a batch apex?
+In batch apex, how would you send email?
+ 7. After the batches are processed, if you want to fetch the history of the batch processed, how would you do that?
+ 8. Difference between with sharing and without sharing? is it at object level or record level
+ 9. Sharing settings
+10. what's a Connected Callback method
+11. Lightning message service
+12. community service experience cloud? sales/service..dont remember clearly
+13. what was your requirement in OTIS flows?
+14. context variables in Apex Triggers? how would you update all Contact's region field as per accounts'?
+15. how to navigate from one tab to other?
+16. Why do we use imperative method when we already have wire?
+What is Delegated admin group/Delegate Administration/Delegated Administrators?
+18) How to delete users in salesforce?
+19) How to deactivate users in salesforce?
+20) Diff btw deactivating and freezing?
+21) Diff btw profiles and role?
+22) Different types of standard profiles in salesforce?
+23) How to create a custom profile?
+24) Types of relationships in salesforce
+25) Can we convert lookup relationship into master detail relationship?
+26) What is roll up summary fields and methods?
+27) Different kind of reports?
+28) What are roles?
+29) Save order of execution?
+30) What will happen if we update value of same field in before trigger and in before flow, which value will get saved?
+31) Can we update field value in after record triggered flow for triggering record?
+32) Does changes to rollup summary fields causes trigger to fire?
+33) How many hooks do we have in LWC? What is a lifecycle hook?
+34) How to update count field on Account object when a contact gets inserted or deleted?
+35) best pratices to write apex triggers?
+36) can you create a profile without standard profile? can record access be controlled through permission set? 1)     Difference between profile and permission set?
+37) Do we purchase Salesforce License or is it for free?
+38) How do we restrict access to account using permission set?
+39) How do you connect SQL server with PeopleSoft doc? How do you get data from backend?
+40) Etl,ssis,r, language,
+41) Difference between ftp and sftp
+42) How to create parent to child relationship in soql query?
+43) Difference between Partial copy of sandbox and full copy of sandbox
+44) No. of events in trigger
+45) How many records can you commit in a single transaction list?
+46) How to create a sales process?
+47) How to edit stages/add values in sales process?
+48) Order management system, case management
+49) Integration api
+50) What is entitlement process?
+51)What is omni-channel routing?
+52) How does case assignment happen?
+53) What’s a junction object?
+54) if account is deleted, all contacts will also be deleted?
+55) Field dependencies
+56) Flexi-page vs page layout
+57) How to integrate between two platforms?
+58) Governor limits?
+59) Autolaunched flow vs reord-triggered flow?
+60) Types of flows
+61) Difference between sosl and soql?
+62) How guest user can have access to exp cloud site?
+63) How to enable logs for experience cloud sites?
+54) Matching and duplicate rules?
+65) Difference between DML Statements and Database Class Methods?
+
 
 
 
