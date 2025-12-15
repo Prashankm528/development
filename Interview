@@ -1,0 +1,101 @@
+Salesforce Architect Interview Practice Pack
+
+Summary of Questions Asked
+
+Trigger Method Call
+
+Can we call the same method inside a trigger?
+
+Key points: recursion risks, bulkification, static variables.
+
+Static Variables in Triggers
+
+Will static variables fail since triggers process records in batches of 200?
+
+Key points: static variables are transaction‑scoped, shared across the batch.
+
+Large Data Volumes
+
+If 20,000 records are processed, will static variables still handle recursion?
+
+Key points: yes, but only per batch; resets across transactions.
+
+Trigger Framework
+
+Designing a metadata‑driven trigger framework.
+
+Key points: custom metadata to control trigger execution, modular action classes.
+
+Multi‑Team Governance
+
+How to handle multiple teams working on the same object (e.g., Account).
+
+Key points: governance, record types, layouts, trigger frameworks, packaging.
+
+Apex Design Patterns
+
+Explanation of Singleton, Factory, Strategy, Observer, Decorator.
+
+Layman analogies + Salesforce mappings.
+
+Singleton Deep Dive
+
+Example of Singleton for caching custom metadata.
+
+Clarification: with 2,000 records, Singleton instantiates once per batch (10 times).
+
+Static Variable Reset
+
+Confirming static variables reset to default after each transaction.
+
+Batch + Trigger + Future Method
+
+What happens if a batch updates records and trigger calls a future method?
+
+Key points: queued async execution, 50 future call limit, bulkification.
+
+Queueable Apex Alternative
+
+Example of replacing future methods with Queueable Apex.
+
+Key points: chaining, complex parameters, modern best practice.
+
+Extra Practice Questions
+
+Trigger & Asynchronous Processing
+
+How would you design a trigger framework that supports both synchronous and asynchronous processing?
+
+What’s the difference between Future, Queueable, and Batch Apex, and when would you use each?
+
+Large Data Volumes
+
+How do you design for LDV (Large Data Volumes) in Salesforce?
+
+What strategies would you use to avoid governor limit exceptions when processing millions of records?
+
+Integration & APIs
+
+How would you design a robust integration between Salesforce and an ERP system?
+
+What patterns would you use to handle error retries and API callouts?
+
+Security & Governance
+
+How do you enforce field‑level security and sharing rules in Apex code?
+
+How do you design a solution that supports multi‑team development without conflicts?
+
+Apex Design Patterns
+
+Give a real Salesforce example of the Strategy pattern in pricing or discount rules.
+
+How would you use the Observer pattern with Platform Events?
+
+Metadata‑Driven Architecture
+
+How would you design a metadata‑driven validation framework so admins can configure rules without code?
+
+How do you ensure metadata changes don’t break existing automations?
+
+).
