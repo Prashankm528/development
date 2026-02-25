@@ -1,0 +1,339 @@
+Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
+inserting the opportunity we need to role back account and contact that has been inserted.
+
+Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords
+Ques3. Making an Api call using LWC. -- fetch Api
+Ques4. how to get the recorddata if you have multiple record id without using wire and apex
+
+ wire or connected call which get called first.
+ Deeplinkks in FSL mobile app
+ custom LWC for mobile 
+ ways ssrvice Territory is getting populate on Service appointment - using map polygons , during book appointment actions 
+ service Territory is mandatory on which object? -- service appointment
+ 
+ 
+ Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
+inserting the opportunity we need to role back account and contact that has been inserted.
+
+Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords
+Ques3. Making an Api call using LWC. -- fetch Api
+Ques4. how to get the recorddata if you have multiple record id without using wire and apex
+
+
+
+
+Field service Lightning:
+
+Suppose we have two partners(contractors), and In a service territory both partner works , so we need to think about the way that if it assign to Quue A ti will assign to partner a and 
+if Queue B , then partner B.
+Suppose you have implemented FSL for helath care client , on ap particular day , all resource are occupied for that service territory, suppose an energency come we need to send a
+resource immediately -- we can utilize shifts or  we can run inday scheduling optimization for the territory to take prioty resource in prefence
+how you configure territory assignment.
+Skill object ka name jo work order pr hai .
+suppose a company work for 9 to 5 and now they also need to work 5 to 12  sometime , what you will do ?I answered use shifts? how to implement shift.
+
+how you will attach the small video from FSL mobile app? -- using chatter feed.How you configure VRA? Download manage packahe and hive remote expert permission
+how you implemented vra  - downoald managed packed, getting neccesary licence , setiing inVRA app, record page -- putting vRA component , assigning neccesary prmission sets Remote Expert perm
+what is appointment bundling, what are its limits. not a multiday, not pineed and not for complex work
+Question. how will you implemment suppose a additional product need to refer customer to sell to give the discount and billing?
+Question. enhance scheduling and optimizaiton.
+how you have done optimization of routing using customization.
+what all customization you have done while implementing FSL.
+challenge in optimization
+limitaions of FSL.
+have you used map polygons , how you will ddefine terrirtoty using the same.
+suppose there is a different calendar holidays for each terrirtoty, how you will implement holidays based on territory.  -- assign operating hour holiday to their respective service territoty
+what is multiday service appointment , how you will schedule the same ?
+What is case management.
+different types of routing ?
+have you worked on chatting functionality.
+how can you put service reports in different language , according to the country language.   ---> service report language on work order
+have you worked on knowledge article , how can you configure them to show in different language.
+Ques5. Using LWC component in FSL mobile app.  - setting enabled in field service mobile license
+Ques6. How to display a common action for all the object on FSL mobile app. -- using publisher layout
+Ques7. how to put the flow on FSL mobile app.  -- field service mobile flows , Quick action , App extension
+Ques8. how you can Schedule a service appointment automatically. -- Auto schedule checkbox
+Ques9. populating the service territory on appointment if its not there. 
+Ques 10 . Multiday service appointment
+Ques 11 . Add a button to the gantt  -- dispatcher console UI  -- custom Button
+Ques 12 . Scheduling dependency -- complex work , dependency type --> same time , start after finish 
+Deeplinkks in FSL mobile app
+ custom LWC for mobile 
+ ways ssrvice Territory is getting populate on Service appointment
+ service Territory is mandatory on which object?
+How will able record the kpi that is success rate of doing service appointment, effeciency of a service resouce ? which solution would you prefer to analyse and how you will do that -- appointment insights
+platform events and push topics
+Any trigger framework implememnted
+how you maintain recursiveness in the trigger
+
+
+ auto dispatch  -- Create job , Dispatch button on console(Bulk dispatch), drip feed 
+ different ways to schedule the appointment  automatically. - drag & drop , Delay auto-scheduling until appointments are geocoded  (Auto schedule), recepies
+ Trigger and flows , click on the schedule button after selecting multiple Service appointment which are in uNassigned state
+ different ways to dispatch the appointment automatically.
+ how service territory getting populated on service appointment
+ different field on service appointment ( differce between arrival window start, Actual start, schedule start)
+ wire or connected call which get called first.
+ Deeplinkks in FSL mobile app
+ custom LWC for mobile 
+ ways ssrvice Territory is getting populate on Service appointment
+ service Territory is mandatory on which object?
+ 
+ 
+ Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
+inserting the opportunity we need to role back account and contact that has been inserted.
+
+Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords
+Ques3. Making an Api call using LWC. -- fetch Api
+Ques4. how to get the recorddata if you have multiple record id without using wire and apex
+
+Ques5. Using LWC component in FSL mobile app.
+Ques6. How to display a common action for all the object on FSL mobile app. -- using publisher layout
+Ques7. how to put the flow on FSL mobile app.  -- field service mobile flows , Quick action , App extension
+Ques8. how you can Schedule a service appointment automatically. -- Auto schedule checkbox
+Ques9. populating the service territory on appointment if its not there. 
+Ques 10 . Multiday service appointment
+Ques 11 . Add a button to the gantt  -- dispatcher console UI  -- custom Button
+Ques 12 . Scheduling dependency -- complex work , dependency type --> same time , start after finish
+
+
+promise  
+setLocationToAwaitingPrice
+Promise all-- takes list of promises of input and all promises resolved then it will return the value
+
+Query Multiple Objects Dynamically:
+GraphQL API simplifies how you query records across multiple objects. You can write a query that asks for the exact fields you want in one call. 
+Using GraphQL API to query multiple objects is more performant than making multiple Apex wire calls.
+import { gql, graphql } from "lightning/uiGraphQLApi";
+
+Importing current User Id:
+import Id from "@salesforce/user/Id";
+
+
+
+Salesforce Admin
+✅ User Management & Security
+What is the difference between Profiles, Roles, and Permission Sets?
+How do Sharing Rules work in Salesforce?
+What is Field-Level Security, and how is it different from Object-Level Security?
+✅ Data Management
+What are Record Types and how are they used in Salesforce?
+What is the difference between Standard and Custom Objects?
+How do you ensure data quality in Salesforce?
+✅ Automation Tools
+Explain the difference between Workflow Rules, Process Builder, and Flow.
+When should you use Flow vs. Apex?
+What are Approval Processes, and how do they work?
+
+🔹 Salesforce Development (Apex & Triggers)
+✅ Apex Programming
+What are the different types of Apex Triggers?
+How do you handle bulk processing in triggers?
+What is the difference between SOQL and SOSL?
+Explain Governor Limits in Salesforce.
+✅ Apex Best Practices
+How do you optimize SOQL queries for performance?
+What is Apex Managed Sharing, and how does it work?
+Explain Exception Handling in Apex.
+
+🔹 Lightning Web Components (LWC)
+✅ LWC Basics
+How is LWC different from Aura Components?
+What are decorators (@api, @track, @wire) in LWC?
+How do you call an Apex method from an LWC component?
+✅ LWC Advanced Topics
+What is Event Propagation in LWC?
+How do you handle Parent-Child Communication in LWC?
+What is Lightning Data Service (LDS), and how is it used?
+How can you implement Navigation Service in LWC?
+
+🔹 Deployment in Salesforce
+✅ Deployment Strategies
+What are the different deployment tools used in Salesforce?
+How do you deploy components using Change Sets, ANT, or SFDX?
+What is the difference between Managed and Unmanaged Packages?
+✅ Deployment Best Practices
+What are Pre-Deployment and Post-Deployment Steps?
+How do you troubleshoot deployment failures?
+How do you ensure data security during deployment?
+
+🔹 Salesforce Integration
+✅ API & Integration Basics
+What are the different ways to integrate Salesforce with external systems?
+Explain the difference between REST API and SOAP API.
+What is OAuth 2.0, and how is it used in Salesforce authentication?
+What are Named Credentials, and why are they useful?
+✅ Advanced Integration Concepts
+What is Streaming API, and when should you use it?
+How do you use Platform Events for real-time integrations?
+Explain Salesforce Connect and its use cases.
+
+appointmnet bundler -- https://salesforce.vidyard.com/watch/Y8v8kfzVN9qmSzSfMKs1aA?&_gl=1*1p4jz0m*_ga*NDc5MzI4MDUzLjE3MzgzMzAyMzc.*_ga_H6M98GGB18*MTczODc3NTk0OC4yLjAuMTczODc3NTk0OC4wLjAuMA..*_gcl_au*OTQzMDg1MDI1LjE3Mzg3NDc5Mjg.&_ga=2.191964963.824004581.1738747028-479328053.1738330237
+
+3940144
+
+--> There are different salesforce org -- India, UK, US and one org that CEO used , how you will show the data of all these org in CEO org.
+--> There is requiremwnt for the integration -- what all initial steps as an architect you do to for requirement gathering.
+-->There is a junction object which have parents as Account , case , contact-- how you will show the all related object field on record page -- without any customization
+--> what are the limitation of Dynamic record form?
+--> how do you reduce the technical debt of any legacy salesforce org
+
+ Lightning Web Components (LWC)
+Explain the full LWC lifecycle with real-time use of connectedCallback and renderedCallback
+How do you implement role-based visibility in reusable LWC components?
+Caching techniques in LWC for repeated data loads
+How to manage large datasets in LWC with virtual scrolling?
+How do you implement search with server-side debouncing and pagination in LWC?
+Explain the use of @wire vs imperative Apex calls – when and why?
+Can you pass data between sibling components without using a parent?
+What security practices do you follow while displaying data in LWC?
+
+Integrating Salesforce with a logistics system with API limits
+How do you ensure API security and avoid data leakage?
+Platform Events vs CDC – which one suits high-volume real-time sync?
+OAuth 2.0 in Named Credentials vs External Credentials
+How do you integrate Salesforce with a third-party system that only supports OAuth 2.0?
+Walk us through the steps to design a secure inbound REST API in Salesforce.
+Real-time use case: Payment gateway integration with status callbacks – how would you design it?
+What is your error-handling and retry mechanism for failed API calls?
+When would you choose Platform Events over Change Data Capture for real-time sync?
+How do you monitor and log API usage in Salesforce?
+
+difference between sharing, without shari g and inheritance sharing.
+How do you handle multitenant architecture for different client , how you manage standard objects
+
+1)Overview of Sales Cloud - from project
+2)Types of relationships in Salesforce
+3)What is many to many relationship.
+4)How to decide primary master in Many to Many relationship.
+5)Difference between Custom metadata and custom setting
+6)Decorators in LWC
+7)Communication in LWC
+8)Lightning Message Service
+9)Difference between Future and Queueable
+10)Communication in Aura components
+11)Trigger - All accounts which are having contacts related to it should not get deleted
+12)You have a LWC component on record page and you have to get recordtype and count field data in component without writing apex.How will you achieve this?
+13)What kind of LWC components worked on?
+14)Best practice of Test class.
+15)Asked write few code - like query, map- gave different scenarios on fly
+16)You have a LWC component, get record Id and update owner id field of the record from LWC
+17)What is batch apex. Are 3 methods of batch mandatory to write? What is it mandatory?
+20)For which purpose you have used Queuable in your project.
+23)How to use LWC comp in screen flows
+24)Can you set order of execution in record triggered flows
+25)Everything that you will think to achieve callout to external system. Wanted every step of integration.
+26)Differfence between Remote site settings and Named credential
+27)Where have you used custom setting and metadata in your project
+28)If you are doing update and making callout synchronously multiple times . Will you get any issue.
+29)Trigger - Count of contacts on Account
+30)in which scenarios trigger.newmap and oldmap are available
+
+
+
+𝟭𝘀𝘁 𝗥𝗼𝘂𝗻𝗱 :
+➝ Why can a Batch Apex finish() method see data that execute() never processed?
+➝ Why does Trigger.new sometimes contain records that fail validation later?
+➝ What happens if refreshApex() is called inside a renderedCallback repeatedly?
+➝ Why do Named Credentials work for REST but fail for SOAP endpoints?
+➝ How is a custom event handled if it is dispatched before the component is connected to the DOM?
+
+ 
+𝟮𝗻𝗱 𝗥𝗼𝘂𝗻𝗱 :
+➝ Why does a callout from a trigger work in sandbox but fail in production?
+➝Why should DOM access be avoided in connectedCallback()?
+➝What happens if a child fires an event but the parent isn’t rendered yet?
+➝ What happens if a record is deleted while an LWC is still wired to it?
+➝ Why can a SOQL query return different results inside the same transaction?
+➝ What happens if an external API returns HTTP 200 but with a business level error in the payload?
+
+
+pallavi.thombare@ltimindtree.com 
+njoshi@cloudely.com  - FSL part time
+
+
+For those who’re getting the mail from the manager with subject ‘MyScore Action Required! Action Needed for JRS & Skills Proficiency’ , Pls follow these quick help steps to action the same
+----------------------------------------------------------------------------------
+If you’re already getting (or are about to get) a mail asking you to reassess all your skills.  Yes, it’s that time of year again.  This is normally a really tedious process but relax - you can actually do it quite fast.
+ Go to Your Career at IBM on W3
+On the Expertise menu in the black bar across the top, choose SKILLS
+Choose LIST VIEW in the icons just underneath the About icon on the right
+Then click APPLY GROUPS BY STATUS (the small folder icon).  This will bring all those that you have not yet assessed up to the top of the list
+Click the EDIT SKILLS icon
+On the same line, on the left, choose Select all
+Return to the right hand side of the page and click Set Expertise Level.
+You can now race down the list setting all your skills in a reasonably quick way.  Remember to SAVE AND CLOSE when done!
+JRSS Skill Proficiency :point_up_2:
+For the JRSS part, if you are using the new tool, the fix is to move the slider for your JRSS proficiency left or right, and then move it back to where it should be and you should now get the option to save the score and it will update as needed to get rid of the warning.
+
+		
+		
+		234
+		
+What is the full lifecycle of an Agentforce Action?
+ 2️⃣ How do Agent Instructions override system behavior?
+ 3️⃣ What is the difference between Tasks, Messages & Turns?
+ 4️⃣ Explain the Instruction Hierarchy with an example.
+ 5️⃣ How does Agentforce decide which prompt template to use?
+ 6️⃣ What is Grounding and how does it prevent hallucinations?
+ 7️⃣ How do Action Handlers work in Apex?
+ 8️⃣ How do you debug Agentforce when an action fails?
+ 9️⃣ What is Safe Completion and why is it important?
+ 🔟 How does Agentforce interact with the Einstein 1 context window?
+		
+
+How would you design a trigger framework that supports multiple objects, recursion control, and feature toggling?
+How do you handle mixed DML operations in a single transaction involving setup and non-setup objects?
+A trigger receives 10,000 records from middleware—how would you process them without hitting limits?
+How would you implement partial success handling in bulk DML operations?
+How do you design Apex code to be retry-safe and idempotent?
+How would you refactor an existing trigger that has SOQL/DML inside loops in production?
+How do you manage callouts + DML in the same execution context?
+How would you debug an intermittent governor limit exception that occurs only in PROD?
+How do you implement transaction control in Salesforce when multiple triggers fire?
+How would you handle record locking issues in a high-concurrency org?
+How would you design an LWC that handles 50k+ records without UI lag?
+How do you prevent unnecessary re-rendering in complex LWC applications?
+How would you implement dynamic component loading based on metadata?
+How do you architect cross-tab or cross-page communication in LWC?
+How would you debug a memory leak in a long-running LWC session?
+How do you manage state consistency between LWC, Apex, and browser cache?
+How would you secure an LWC that displays sensitive financial data?
+How do you handle race conditions when multiple LWCs update the same record?
+How would you implement offline-ready LWC behavior?
+How do you design LWCs to be package-ready and reusable across orgs?
+How would you design a bi-directional real-time sync between Salesforce and an external ERP?
+How do you ensure exactly-once processing for inbound API requests?
+How would you handle API throttling and rate limits from third-party systems?
+How do you design an integration that supports retry, back-off, and dead-letter handling?
+How do you manage versioning of APIs consumed by Salesforce?
+How would you secure an integration that handles PII or financial data?
+How do you process out-of-order events from Platform Events or CDC?
+How would you design an integration for millions of records per day?
+How do you handle schema changes from external systems without breaking Salesforce?
+How would you troubleshoot data mismatch issues between Salesforce and middleware?
+How would you design a multi-org Salesforce architecture for a global enterprise?
+How do you enforce field-level security dynamically in Apex APIs?
+How do you design Salesforce to be loosely coupled from external systems?
+How would you architect disaster recovery for critical Salesforce integrations?
+How do you handle zero-downtime deployments in Salesforce?
+How do you ensure auditability and traceability for data changes?
+How would you design a feature toggle system in Salesforce?
+How do you handle technical debt in a large Salesforce codebase?
+How do you design Salesforce solutions that are future-proof against platform limits?
+
+What is the difference between Role Hierarchy vs Sharing Rules? When do you use each?
+ 2️⃣ What happens if a user loses access to a record even though they are above in the role hierarchy?
+ 3️⃣ Explain the difference between Lookup and Master-Detail with real business examples.
+ 4️⃣ How does OWD (Org-Wide Default) impact record visibility in a complex org?
+ 5️⃣ What is a Permission Set Group, and when should it be used over a Profile?
+ 6️⃣ How do you troubleshoot when a user says “I can’t see a field”?
+ 7️⃣ How do Validation Rules, Flows, and Triggers interact? Which one fires first?
+ 8️⃣ How do you restrict users from editing fields only after a record reaches a certain stage?
+ 9️⃣ What is the difference between Record Types and Page Layouts?
+ 🔟 When would you choose Flow over Process Builder or Workflow Rules?
+1️⃣1️⃣ How do you mass update records without giving users full data access?
+ 1️⃣2️⃣ What is a delegated admin, and why do companies use them?
+ 1️⃣3️⃣ How do you audit field-level changes using Field History Tracking?
+ 1️⃣4️⃣ How do you handle login IP restrictions and how do you bypass them safely?
+ 1️⃣5️⃣ How would you debug a Flow that works for some users but fails for others?
