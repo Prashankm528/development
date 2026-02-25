@@ -1,0 +1,64 @@
+/**
+ * This is GrowthHeroes-provided base class providing common utility methods
+ */
+public with sharing class GH_CodeUtils {
+
+    private static Set<String> activeFlagStrings = new Set<String>();
+
+    /**
+     * @description - check to see if a given flag is already set
+     * @return {Boolean} - True implies it is set
+     * @param flag {String} - Name of the flag to check
+     */
+    public static Boolean isFlagSet(String flag){
+        return (flag != null ? GH_CodeUtils.activeFlagStrings.contains(flag.toLowerCase().trim()) : false);
+    }
+
+    /**
+     * @description - set a flag for the remainder of the transaction
+     * @param flag {String} - Name of the flag to set 
+     */
+    public static void setFlag(String flag){
+        if (flag != null) { GH_CodeUtils.activeFlagStrings.add(flag.toLowerCase().trim());}
+    }
+
+    /**
+     * @description - remove a flag
+     * @param flag {String} - Name of the flag to set 
+     */
+    public static void clearFlag(String flag){
+        if (flag != null) { GH_CodeUtils.activeFlagStrings.remove(flag.toLowerCase().trim());}
+    }
+
+    /**
+     * @description - removes all currently stored flags
+     */
+    public static void clearAllFlags(){
+        GH_CodeUtils.activeFlagStrings.clear();
+    }
+
+    /**
+     * @description - This method returns the name of the currently-executing Apex class
+     * @return {String} - the current Apex class name
+     */
+    public static String getClassName(){
+
+        String info = new DmlException().getStackTraceString().substringAfter('\n');
+
+        if (info.startsWith('Class.')){
+            info = info.substringAfter('Class.');
+        }
+        return info.substringBefore(':').substringBeforeLast('.');
+    }
+
+    /**
+     * @description - This method returns the name of the currently-executing Apex method
+     * @return {String} - the current Apex method name
+     */
+    public static String getMethodName(){
+        String info = new DmlException().getStackTraceString().substringAfter('\n');
+
+        return info.substringBefore(':').substringAfterLast('.');
+    }
+
+}
