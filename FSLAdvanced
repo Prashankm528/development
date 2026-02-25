@@ -140,3 +140,35 @@ I have the work types - work plans - work steps - work rules all set up for thos
 
 
 Is there a way to have my Winch A work plan show but if a camera accessory is added then it also shows the work plan for installing a camera? So I will always have a winch install work plan showing but if one of the accessory products are on the work order then I need to show the work plans for the accessories as well?
+
+
+
+1. brief intoduction 
+2. any integration -- functional
+3. community 
+4. template used --
+5. drawbacks of LWR
+6. sharinfg set
+7. Responsiveness of LWC.
+8. reusable component built in LWC
+9. SOQL  101 error
+10. Scenario - on soql 101
+11.Fill the MAp
+,
+List<Contact> cList = new List<Contact>(); is the list 
+Map<Id,List<Contact> cMap =new Map <Id, List<Contact>>(); is the map
+for(Contact c : cList){
+  if(cMap.keySet.containsKey(c.AccountId)){
+    cMap.get(c.AccountId).add(c);
+  }else{
+    cMap.put(c.AccountId, new List<Contact>{c});
+  }
+}
+
+throwing error in flows.
+What is permission set group?
+what is differnec between permission set and permission set group?
+muting a permission set?
+
+user -- scenario -- by passing the validation rule
+custom metadata vs custom Settings
