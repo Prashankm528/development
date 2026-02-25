@@ -10,6 +10,16 @@ Ques4. how to get the recorddata if you have multiple record id without using wi
  custom LWC for mobile 
  ways ssrvice Territory is getting populate on Service appointment - using map polygons , during book appointment actions 
  service Territory is mandatory on which object? -- service appointment
+
+When a issue come in Production --> How you ensure the code merge to the latest code by developer , issue fix by run team 
+how we can remove the delete functionality for the particular 5 user out of 200 user .
+MAT components in FSL.
+How can dispatcher schedule multiple service appointemnt to multiple service resources.at one go?
+What is disconnected callBack when it comes in picture in parent chils?
+Event listners in LWC
+Is there anything provide bY LWC at the time of pageload -- data is been loaded in table , so that it can get faster?
+we are migrating the data from legacy system to salesforce, we need to maintain refrential integrity  i.e create date other date should maintain and
+how ypu will manage the Inactive user that are related to record?
  
  
  Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
