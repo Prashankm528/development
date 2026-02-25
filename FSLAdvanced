@@ -1,0 +1,142 @@
+These are the questions we have discussed -
+how to communicate in LWC 
+🔷What is batchable in apex
+Interface in apex, why we use interface like general way he wanted answer
+promise and promise all in LWC
+decorators in LWC
+SOQL query on LAST_N_Months:N
+Explain how will you create cab booking system in salesforce (lot of cross question like how will give discount, what will be relationship , if any new user is there then special discount etc)
+Any unique ideas that I brought in my project
+If I have account object and I have 9 opportunities related to that , so what I will do to update them ( optimize solution he wanted ) like without actual 9 DML (with least number of DML)
+project based question like how do I handle crital bugs in projects, how do I make sure that what ever solution i am giving is best and optimise solution in salesforce , any thing new that you have implemented in salesforce project
+If a sprint is there and the development got late how do you handle that 
+Difference between synchronous and asyncrouns in apex
+how to debug in LWC
+
+1.leads ko process qualified-- 24 hours-- stateful
+2.picklist -- object -- aacount ki fields
+3. LLM model ko train
+4.aggregrate query
+5.lead creation -- web sevice ko call -- success hai ek aur web service ko clal krna to succes nhi hai  --real time-- dataadapter
+6.cross origin resource sharing(cors)
+7.wire ke through dml update(cacheable)
+8. static resource  --  rendered callback use 
+
+1. What is the difference between for:each and iterator in Lightning Web Components (LWC)?
+2. Provide a code example to demonstrate bubble and capture phases in JavaScript.
+3. How do you implement Lightning Message Service (LMS) with an example?
+4. What is Lightning Data Service (LDS), and how is it used?
+5. How can you bypass a validation rule in Salesforce?
+6. In what context is manual sharing enabled in Salesforce?
+7. Can a user delete records created by someone in the same role?
+8. What is the difference between User Mode and System Mode in Salesforce?
+9. What are decorators in LWC, and how are they used?
+10. How many ways can records be shared in Salesforce?
+11. Can we call a Batch Apex class from a future method? If not, why?
+12. Can callouts be made from a trigger? Why or why not?
+13. Can we implement both Scheduled Apex and Batch Apex in a single Apex class? What is the best practice?
+14. Can we make callouts from Batch Apex?
+15. What are lifecycle hooks in Lightning Web Components?
+16. Which executes first: decorators or lifecycle hooks?
+17. What are the advantages and limitations of Lightning Data Service (LDS)?
+18. How would you implement a rule where an Account's phone cannot match a Contact's phone?
+19. What is the relationship between Account and Contact in Salesforce?
+20. Can we create a roll-up summary field for Contact on Account? Is it possible through standard functionality? If not, how would you implement it?
+21. When an Opportunity is marked as "Closed Won," how can you make the Opportunity and its Opportunity Products read-only?
+22. How can you communicate from a child component to a parent component in LWC? And vice versa?
+23. How can two independent LWC components communicate with each other?
+24. If a Batch Apex processes 2000 records with a scope of 200, how many debug logs will be generated?
+25. Have you worked on any deployment tools? If yes, which ones?
+26. What is the difference between with sharing and without sharing in Salesforce Apex?
+
+1️⃣ What interface implements Batch Apex in Salesforce?
+2️⃣ Can a Batch Apex job be paused or resumed?
+3️⃣ Is the order of execution for batches guaranteed? Why or why not?
+4️⃣ What is the purpose of the finish method in Batch Apex?
+5️⃣ How can you schedule a Batch Apex job for future execution?
+6️⃣ What is the advantage of using Database.QueryLocator in Batch Apex?
+7️⃣ Can we call one batch class from another batch class?
+8️⃣ What happens if an error occurs in one batch? Will the entire job roll back?
+9️⃣ How can you ensure only problematic records roll back while others are successfully processed?
+
+1. Retrieve Accounts where at least two Contacts have the same email domain.
+2. Fetch Opportunities where the total Amount of related won Opportunities exceeds the Amount of the current Opportunity.
+3. List all Accounts that don’t have any Cases, but their related Contacts do.
+4. Find Users who have created more than five records across different objects in the last 24 hours.
+5. Identify Opportunities where the related Account has no active Cases but at least one closed Opportunity.
+6. Retrieve all Cases where the same Contact is listed as the Contact multiple times in the Case hierarchy (e.g., Parent and Child Cases).
+7. List all Accounts with an Opportunity closing in the next 30 days, but no related Tasks due within the same timeframe.
+8. Find Contacts who are associated with multiple Accounts, but none of their Accounts have any open Opportunities.
+9. Fetch all Opportunities where the related Account's AnnualRevenue is less than the Opportunity Amount.
+10. Identify Accounts where all related Opportunities are closed and the total number of Contacts is greater than 10.
+
+1. How can we avoid nested iteration in Apex?
+2. Can we schedule an Apex class multiple times in a single day?
+3. A Flow with 80 "Get Records" elements is used to query data, and the Flow also calls an Apex class that contains 80 SOQL queries. Will this lead to governor limits?
+4. How do we lock records in Salesforce using Apex?
+5. What is the difference between using "with sharing" and "without sharing" in Apex?
+6. How many invocable methods can we have in one Apex class?
+7. When creating an Apex method for LWC, you specify the annotation @AuraEnabled, and sometimes @AuraEnabled(cacheable=true). What does cacheable=true mean?
+8. An Apex class denoted with sharing contains a SOQL query on the Account object, including a custom field abc__c. If a user who does not have access to this field tries to run this code, what error will they encounter?
+9. How can we control field-level security in Apex code?
+10. How can you check field- and object-level access in an Apex class?
+11. Apart from fetching data from Apex classes, what else can you do using the @wire method?
+12. If you use the @AuraEnabled annotation in an Apex method, can you perform DML operations within that method? If not, what type of error does it throw?
+13. If you are calling an Apex method using a wire decorator, does it return a promise?
+14. If I am calling a method using wire, can I perform DML operations within the Apex method?
+15. Provide two basic Apex examples using lists and maps.
+
+
+1.What is Apex in Salesforce, and why is it used?
+2.How does Apex differ from other programming languages?
+3.Explain the different types of collections in Apex and give an example of each.
+4.What are triggers in Salesforce, and how are they different from classes?
+5.How do you handle bulk data processing in Apex to avoid hitting governor limits?
+6.Can you explain the concept of "Single vs. Bulk" in Salesforce Apex triggers?
+7.What is a governor limit in Salesforce, and how do you avoid exceeding them in Apex?
+8.What are the different types of relationships in Salesforce, and how do they affect data retrieval using Apex?
+9.How do you handle DML operations (insert, update, delete) in Apex? What are the best practices?
+10.What are asynchronous operations in Apex, and when should you use them?
+11.What is the difference between @future and Queueable Apex?
+12.What is a batch class in Apex, and how is it different from @future and Queueable?
+13.Explain the purpose of System.debug() and provide an example of its use.
+14.Can you explain the importance of test coverage?
+15.What is a custom setting in Salesforce, and how is it used in Apex?
+16.How would you implement a trigger that works before and after insert operations?
+17.What is a Visualforce page, and how can it be integrated with Apex controllers?
+18.How can you use custom metadata types in Apex?
+19.How can you prevent recursive triggers in Apex?
+20.What is the difference between before and after triggers in Apex?
+21.What are some common pitfalls that can lead to performance issues in Apex code?
+22.Can you explain the difference between SOQL and SOSL? Provide use cases for each.
+23.How can you optimize a query in Apex to avoid hitting query limits?
+24.What is the purpose of @isTest annotation in Apex, and how is it used?
+25.How do you handle exceptions in Apex code?
+26.What are the common Governor Limits in Salesforce? How do you handle them?
+27.What is the use of the Database.insert() method and how does it differ from DML operations?
+28.Can you explain the difference between Trigger.new and Trigger.old in Apex?
+29.How do you implement dynamic SOQL and dynamic Apex in Salesforce?
+30.Explain the role of the platform events in Apex.
+How would you build an LWC components taht continously check integration status and only stop showing a loading indicator when all integration are successful?
+
+
+workPlan: https://proquestit.com/insights/salesforce-field-service-work-plans/https://salesforce.stackexchange.com/questions/344417/fsl-unable-to-retrieve-slots-using-getabslots-appointmentbookingservice
+
+fetching the slots :  based on timezone
+
+
+Scnario:
+
+My business ha 3 main work types.
+
+Install Winch A
+
+Install Winch B
+
+Install Winch C
+
+
+I have the work types - work plans - work steps - work rules all set up for those 3. But we also have about 20 different product ad-ons that can possibly be on the work order. Each additional product will need it's own set of work plans/work steps.
+
+
+Is there a way to have my Winch A work plan show but if a camera accessory is added then it also shows the work plan for installing a camera? So I will always have a winch install work plan showing but if one of the accessory products are on the work order then I need to show the work plans for the accessories as well?
