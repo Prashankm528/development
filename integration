@@ -1,0 +1,95 @@
+Ways to integrate external system to flows:
+
+1. Platform events
+2. External object
+3. Lightning component
+4. enhanced external Services
+5. Apex code
+
+
+Fire and forgot: platform event
+event based communication  -- in real time or in near real time
+
+component of event driven system:
+Event, event message, event producer, event channel , event consumer , event bus.
+
+Replay Id -- populated when the event are recieved at subscriber.
+
+Publish Behavior and transaction:
+
+1. publish immediately.
+2. publish after commit
+
+If your app is on the Salesforce Platform, you can publish events using an Apex method or with the Flow Builder declarative tool. 
+If your app is an external app, you can publish events using Salesforce APIs, including Pub/Sub API and the data APIs, like REST API.
+
+ The EventBus.publish() method returns a Database.SaveResult object, which contains the result of the publishing. If isSuccess() returns true, 
+ the publish request is queued in Salesforce and the event message is published asynchronously. If isSuccess() returns false, the event publish 
+ operation results in errors, which are returned in the Database.Error object. This method doesn’t throw an exception due to an unsuccessful publish operation.
+ 
+To publish more than one event in the same call, add your events to a list of events, and pass the list to the EventBus.publish() method. The output of this method 
+is an array of Database.SaveResult objects: one for each published event. EventBus.publish() can publish some passed-in events, even when other events can’t be published 
+due to errors. The EventBus.publish() method doesn’t throw exceptions caused by an unsuccessful publish operation. 
+
+To get confirmation of the final event publishing result, use Apex Publish Callbacks.
+
+each publish calculate as dml statement.
+
+
+Subscribe:
+
+On the Salesforce Platform, you subscribe to events using Apex triggers, processes, flows, and the empApi Lightning component. In an external app, you subscribe to events using Pub/Sub API.
+
+Platform events support only after insert triggers. 
+A trigger processes platform event notifications sequentially in the order they’re received. The order of events is based on the event replay ID. An Apex trigger can receive a batch of events at once.
+Asynchronous Trigger Execution ( publish and subscribe both are diffrent transaction.
+The batch size in a platform event trigger is 2,000 event messages, which is larger than the Salesforce object trigger batch size of 200.
+To publish platform events in an Apex test, enclose the publish statements within Test.startTest and Test.stopTest statements.
+you can suspend or resume the event under subscriber related list.
+
+
+Use Salesforce Connect when:
+
+There’s a large amount of data that requires heavy management if it’s copied into the Salesforce org.
+Small amounts of data are needed at any one time.
+Real-time access to the latest data is required.
+
+Salesforce Connect Adapters:
+
+1. Cross org Adapters -- salesforce Lightning platform rest Api
+2. oDAta 2.o or Odata 4.0 --connect to back office for complete view of external systems
+3. custom Adapters -- connect to any data anywhere for a complete view of business . use apex connector framework to develop a custom adapter
+4. for Amazon dybodb --> connect user to store data in  Amazon dynamo db
+
+
+to connect and interact with any provider api -- how external service authenticate -- named credentials
+
+api specification -- provided by service provider what data we can use
+
+An external web services provider, such as a bank, hosts its REST-based API. In this scenario, think of a REST-based API as specifying a type of contract between the bank (provider) and you (consumer).
+The web service provider (like in our bank web service example) or a developer (or maybe even you) shares a JSON-based API spec that describes the API.
+A Salesforce administrator or developer declaratively creates a named credential to authenticate the web service endpoint using the URL of the REST-based API provided by the external web service 
+provider. The endpoint is simply what exposes the web services resources for interaction with External Services.
+A Salesforce admin declaratively registers the web service and uses both the Named Credential and API spec during the registration process. 
+External Services imports the API spec’s operations into your org and makes them available as invocable actions.
+A Salesforce admin uses Flow Builder to access the invocable flow actions that were registered in Step 4.
+During runtime, flow sends a callout to the web service endpoint. The web service returns output based on the API spec. Data is retrieved, created, updated, or deleted by the external web service.
+ Salesforce can capture these responses from the external web service for use with a tool like Flow Builder.
+ 
+ 
+The invocable method must be static.
+The invocable method must be either public or global.
+The class the invocable method belongs to must be an outer class.
+Triggers can’t reference Invocable methods.
+Other annotations can’t be used with the InvocableMethod annotation.
+Only one method in a class can have the InvocableMethod annotation.
+
+To build a record-triggered flow, we define the business requirement in three parts: trigger, criteria, and action.
+
+Best practice for Flows:
+
+1.Beware of the ‘executed element’ limit — Every time Flow hits an element, 
+this counts as an element execution. As of Spring ’21, there are currently 2,000 element executions allowed per flow interview. Consider a scenario where you are looping more than 1,500 contacts.
+
+2. DML inside a loop
+3. Not creating fault paths
