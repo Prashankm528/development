@@ -112,3 +112,23 @@ Timezone targetTimeZone =
     TimeZone.getTimeZone(localTimeZone);
 
 This ensured customers only saw valid appointment options."
+
+
+Q4. How you do automatic scheduling through FSL engine?
+Ans4. FSL.ScheduleService.schedule()
+
+Q5. Any oter customization doen in terms of FSL?
+A5. "I implemented bi-directional timezone conversion between external systems and Salesforce FSL. 
+Arrival windows were converted from local territory time to GMT for storage and converted back when displayed to dispatchers and technicians."
+
+API send the time in EST , howeversalesforce stores in GMT convert using timezone class and offset time zone  method.
+and for outbound msg we convert back them to local timezone
+
+FSL Gantt Custom Icons:
+Product vs Service
+Weight
+Crew Size
+based upon above we are populating FSL__GanttIcon__c : Heavy Pickup
+Two-Man Crew
+Standard Pickup
+Heavy Crew Job
