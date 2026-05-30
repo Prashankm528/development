@@ -147,3 +147,32 @@ a.Enable Lightning Data Service for the Field Service mobile app.:
         org wide: Enable Lightning Data Service for your entire org in Field Service Settings. From Setup, in the Quick Find box, 
                 enter and select Field Service Settings. Under Lightning SDK for Field Service Mobile, select Enable Lightning SDK for Field Service Mobile.
 b. Set up permissions for Einstein for Field Service features.
+
+2. Agentforce: Add a conversational AI assistant to the Field Service app to boost productivity, reduce service times, and improve first-time fix rates.
+
+Q9: Document builder:
+Document Builder is the Salesforce Field Service solution for creating richly formatted and branded PDF service documents for your business needs.
+FSL settings--> enable document builder( can be replacement for Service template ) only one can be visible at a time
+
+PS to assign: Field service document builder dispatcher/ mobile/Standard
+System Permissions.
+Click Edit, and then select Document Builder and Lightning SDK for Field Service Mobile. Save your changes.
+Click Create Service Document.
+If you’ve entered a value in the service document’s template field, you land on the corresponding template. Otherwise, if you set a default, but no Service Document Template ID for the record or for the associated Work Type, the default template loads.
+https://help.salesforce.com/s/articleView?id=service.fs_document_builder_translate.htm&type=5
+
+ Service Report Language field.   will be there when enable translation workbench enable.
+
+Mobile development consideration:
+use GraphQL (GQL) or the Lightning Data Service wire adapter. See Use the Wire Service to Get Data. GQL updates data in the local cache, allowing LWCs to function offline. 
+Remember, mobile connectivity isn’t always reliable, so GQL offers better performance in low-connectivity situations.
+
+Briefcase builder:
+
+With Briefcase Builder, you can create a briefcase and then select the records that you want to put in the briefcase. After the briefcase is set up, you can make it available to your users while they’re offline in the Field Service iOS and Android mobile apps.
+
+Note
+Note To use Briefcase Builder and access its full functionality, install the iOS and Android Field Serv
+5 briefcase , 50000 records can be primed per user (
+Create a briefcase by using Briefcase Builder in Setup.
+you can use object rules and filters to select the most relevant records for your mobile workforce.
