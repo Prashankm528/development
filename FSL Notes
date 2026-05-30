@@ -1,0 +1,114 @@
+FSL Notes:
+
+Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
+Ans1 .  use getAppointmentInsight class method.
+        // FSL.ScheduleService class
+        // The getAppointmentInsights method returns a AppointmentInsightsResult result
+        FSL.AppointmentInsightsResult myresult = new FSL.AppointmentInsightsResult();
+        
+        // static FSL.AppointmentInsightsResult 
+        myresult = FSL.ScheduleService.getAppointmentInsights(Service Appointment ID,Scheduling Policy ID);
+        
+        System.debug(myresult);
+
+Ques2. How you fetch slots programitaclly?
+Ans2. Call FSL AppointmentBookingService.GetSlots()
+  slots =
+  FSL.AppointmentBookingService.GetSlots(
+      serviceAppointmentId,
+      schedulingPolicy.Id,
+      operatingHours,
+      tz,
+      false
+  );
+tz is time zone
+
+Ques3: Tell me about any customization you did in FSL?
+Ans3. One of the most complex FSL developments I worked on was building a custom Appointment Availability REST API that allowed external systems to retrieve available installation appointment slots using Salesforce Field Service's scheduling engine.
+
+The requirement was that before creating an actual work order, the external order management system needed to know what appointment slots were available for a customer based on location, products being installed, and various business constraints.
+
+To achieve this, I developed a custom Apex REST service integrated with Salesforce FSL."
+
+1. Service Territory Identification
+
+"The first functionality I implemented was dynamically determining the correct Service Territory based on the customer's ZIP code and provider code.
+
+The API queried a ZIP-to-Service Territory mapping object and validated that a valid territory existed before scheduling could proceed."
+
+Business Value:
+Ensured appointments were only offered within valid service coverage areas.
+
+2. Redo Order Validation
+
+"I implemented a Redo Order validation process.
+
+If the request was marked as a Redo installation, the system checked the original completed Work Order and verified that it was not older than 90 days.
+
+If the work order exceeded the allowed period, the API returned a business error and prevented scheduling."
+
+Business Rule:
+Redo appointments are only allowed within 90 days of completion.
+
+3.SKU-Based Scheduling Logic
+
+"I developed custom SKU validation logic using Custom Metadata and Product records.
+
+The API evaluated all products being installed and checked whether any SKU required additional lead time.
+
+Each product could have a SKU-specific delay value, and the system automatically calculated the maximum delay required among all products."
+
+Example:
+
+Standard Installation = 0 days
+Special Order Product = 5 days
+
+The API automatically shifted the scheduling window by 5 days.
+
+Business Value:
+Prevented appointments from being booked before inventory was available.
+
+5. Vehicle Capacity Validation
+
+"I implemented a custom business rule related to technician vehicle capacity.
+
+Some territories had a flag indicating vehicle limitations.
+
+The API inspected product attributes such as TV dimensions and blocked scheduling when the product exceeded the territory's transportation limits."
+
+For example:
+
+TV height >= 50 inches
+Territory vehicle limitation enabled
+
+Result:
+
+Scheduling blocked
+Custom error returned
+
+Business Value:
+Prevented appointments that technicians physically could not complete.
+
+11. Time Zone and Slot Filtering Logic
+
+"I implemented custom filtering rules after receiving slots from FSL.
+
+Examples included:
+
+Excluding same-day appointments
+Excluding next-day appointments after a configured cutoff time (8 PM local territory time)
+DateTime eightPmInGmtOfLocalTimeZone =
+    getEightPmInGmtOfLocalTimeZone(
+        zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
+    );
+Converting slots based on territory-specific time zones
+
+System.TimeZone tz =
+    System.TimeZone.getTimeZone(
+        zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
+    );
+
+Timezone targetTimeZone =
+    TimeZone.getTimeZone(localTimeZone);
+
+This ensured customers only saw valid appointment options."
