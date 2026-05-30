@@ -132,3 +132,18 @@ based upon above we are populating FSL__GanttIcon__c : Heavy Pickup
 Two-Man Crew
 Standard Pickup
 Heavy Crew Job
+
+Q6. What Can I Do with LWCs in the Field Service Mobile App?
+A6.You can create custom components that are accessed from the Actions menu. The Actions menu is available globally and on record detail pages.
+FSL do not support LWCs inside of a flow, only the configuration of a LWC as quick action by itself.
+
+Q7. Set Up Permissions for Einstein for Field Service Mobile?
+https://help.salesforce.com/s/articleView?id=service.fs_einstein_gen_ai_setup.htm&type=5
+
+Q8: FSL AI features:
+1. pre work Brief: 
+pre condition:
+a.Enable Lightning Data Service for the Field Service mobile app.:
+        org wide: Enable Lightning Data Service for your entire org in Field Service Settings. From Setup, in the Quick Find box, 
+                enter and select Field Service Settings. Under Lightning SDK for Field Service Mobile, select Enable Lightning SDK for Field Service Mobile.
+b. Set up permissions for Einstein for Field Service features.
