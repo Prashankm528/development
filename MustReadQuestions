@@ -25,3 +25,39 @@ Ans 7. Query Multiple Objects Dynamically:
 GraphQL API simplifies how you query records across multiple objects. You can write a query that asks for the exact fields you want in one call. 
 Using GraphQL API to query multiple objects is more performant than making multiple Apex wire calls.
 import { gql, graphql } from "lightning/uiGraphQLApi";
+
+Ques8: There are different salesforce org -- India, UK, US and one org that CEO used , how you will show the data of all these org in CEO org.
+Ans8 use salesforce connect((OData / Cross-Org) adapters , levrage external object(__x) that consumes zero data storage in the CEO org and good for
+Viewing/editing regional records on demand in native UI.Limits: API limits; reports on external objects have functional limits
+
+or Use Salesforce DAta cloud  giving unified 360  degree view , it have Near real-time, built-in multi-org connectors, zero heavy ETL maintenance.
+
+Ques9 : There is requiremwnt for the integration -- what all initial steps as an architect you do to for requirement gathering.
+Ans 9:When I receive an integration requirement, I don't start with the technology or API. As an architect, I first understand the business process and then derive the technical solution.
+First, I understand the business objective and scope — why the integration is needed, what business process it supports, and which systems are involved.
+Second, I identify the source and target systems and establish the system of record. For each data domain, I want to know which system owns the data and whether the integration is one-way or bidirectional.
+Third, I understand the data and relationships. I identify the objects, key fields, unique identifiers, parent-child relationships, and any referential-integrity requirements. I also understand whether historical information such as Created Date, Modified Date, and other business dates needs to be preserved.
+Fourth, I define the integration behavior — what events trigger the integration, whether it needs to be real-time, near-real-time, or batch, and the expected data volume and frequency, including peak volumes.
+Fifth, I gather the transformation and mapping requirements. I identify source-to-target field mappings, data-type conversions, picklist mappings, mandatory fields, default values, and business validation rules.
+Then I focus on non-functional requirements such as performance, availability, security, authentication, data privacy, API limits, SLA, monitoring, and scalability.
+I also define failure handling upfront — how errors are logged, retry mechanisms, duplicate handling or idempotency, dead-letter processing, alerting, and how failed transactions will be reprocessed.
+Finally, I define reconciliation and operational requirements so that we can prove that the data sent by the source was successfully processed by Salesforce.
+
+Once I have these requirements, I evaluate the appropriate integration pattern — for example REST/SOAP, Bulk API, Platform Events, CDC, or middleware such as MuleSoft — and then produce the solution architecture, data mapping, sequence diagrams, and implementation approach.
+So my approach is essentially: understand the business → identify systems and ownership → understand data and events → define functional and non-functional requirements → define error and security requirements → and only then select the integration pattern and technology.”
+
+
+Ques10. what are the limitation of Dynamic record form?
+Ans 10: Mobile apps may not support Dynamic Forms, limiting the effectiveness of Salesforce applications for users who need to access them on the go
+Slow page load times
+If you have controlling and dependent fields in different field section components, the dependent field doesn’t update when you change the controlling field value.
+Encrypted fields on a dynamic form don’t display correctly. The field label shows as “Encrypted Field” instead of the actual label.
+Dynamic Forms are only available for objects that support Lightning Web Component (LWC) record pages.
+
+Ques 11. how do you reduce the technical debt of any legacy salesforce org
+Ams 11: run salesforce optimizer(retired) -- org check (app exchange) -- free
+Static Code Analysis (PMD / Code Analyzer): Scans the Apex codebase for anti-patterns (e.g., SOQL/DML inside for loops, missing null checks, poor test classes without assertions, outdated API versions).
+Dependency Analysis: Use tools like Salesforce Metadata Dependency API, HappySoup.io, or SonarQube to identify circular dependencies and orphaned metadata.
+Scan for Data Skew (ownership skew where one user owns >10,000 records, or lookup skew where thousands of child records point to one parent), which causes row locks and slow SOQL queries.
+Data Archiving:Implement an archival strategy (Big Objects, Salesforce Backup, or external data stores via AWS/Snowflake) to move historical, non-operational data out of standard objects.
+Code Modernization: Update API versions, UI migration
