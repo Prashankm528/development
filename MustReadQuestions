@@ -1,0 +1,27 @@
+Ques1. Introduction
+
+Ques 2. Order of execution in salesforce:
+Ans 2. https://www.salesforceben.com/learn-salesforce-order-of-execution/
+
+Ques 3. we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
+inserting the opportunity we need to role back account and contact that has been inserted.
+
+Ans. Use Database.savePoint ex: Ticket reservation booking.
+https://www.apexhours.com/transaction-savepoints-and-rollback-strategies-in-apex/
+
+Ques4. we are migrating the data from legacy system to salesforce, we need to maintain refrential integrity  i.e create date other date should maintain.
+Ans4. a.Enable "Set Audit Fields upon Record Creation" and "Update Records with Inactive Owners" User Permissions
+      b. Set Audit Fields upon Record Creation to Migration user.
+
+Ques5. difference between Promise and Promise all
+Ans 5. promise means it will return any value(Resolve or reject) . generally for asynchronous opertion. Promise Resolves to a single value  amd promise all to array.
+Promise all-- takes list of promises of input and all promises resolved then it will return the value.
+
+Ques6.How to get the record data without using apex in lWC based on recordId. -- 
+Ans 6. getReecords , multiple records of same object , or multiple records of the different object.
+
+Ques7.how to get the recorddata if you have multiple record id without using wire and apex.
+Ans 7. Query Multiple Objects Dynamically:
+GraphQL API simplifies how you query records across multiple objects. You can write a query that asks for the exact fields you want in one call. 
+Using GraphQL API to query multiple objects is more performant than making multiple Apex wire calls.
+import { gql, graphql } from "lightning/uiGraphQLApi";
