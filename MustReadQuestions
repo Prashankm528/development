@@ -61,3 +61,20 @@ Dependency Analysis: Use tools like Salesforce Metadata Dependency API, HappySou
 Scan for Data Skew (ownership skew where one user owns >10,000 records, or lookup skew where thousands of child records point to one parent), which causes row locks and slow SOQL queries.
 Data Archiving:Implement an archival strategy (Big Objects, Salesforce Backup, or external data stores via AWS/Snowflake) to move historical, non-operational data out of standard objects.
 Code Modernization: Update API versions, UI migration
+
+Q12: difference between sharing, without shari g and inheritance sharing.
+Ans 12. by default for API 67 -- its now with sahring  ,
+inheritance sharing:A child object automatically receives data or behaviors defined by its parent class.can override the parent permission.
+
+Q13. How do you handle multitenant architecture for different client , how you manage standard objects
+Ans 13: Data Partitioning (Record Level) and Modular Architecture (Metadata & Code Level).
+Data Isolation: set owd private, create different role heirarchy, use record types and different support or service process, criteria based sharing rule , and object and fls using PS.
+Modular Architecture: Namespace with classes,Use a single, metadata-driven Trigger Framework. Instead of teams writing multiple competing triggers on the same object (e.g., Account), maintain one trigger that calls a dispatcher, orchestrating team handler classes via Custom Metadata Types.
+
+Have a center odf excellence team to approve the changes of any type of commo or standard objects.
+craete a metadriven trigger framework with certain field cobtaining object, apex class, isActive, recursion , bypass.
+
+Implement the interface class
+Implement the concerete class(Trigger dispatcher where the main helper class will be selected and code for recursion and bypass
+Implemet trigger which will rcall triggerdispatcher.run ( run is the method in trigger dispatcher where we are selecting apex class on runtime)
+the mainapex class will implemet the interface with all the method and logic.
