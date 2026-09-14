@@ -1,13 +1,17 @@
 Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
 inserting the opportunity we need to role back account and contact that has been inserted.
 
-Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords
+Ans. Use Database.savePoint ex: Ticket reservation booking.
+https://www.apexhours.com/transaction-savepoints-and-rollback-strategies-in-apex/
+
+Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords , multiple records of same object , or multiple records of the different object
 Ques3. Making an Api call using LWC. -- fetch Api
 Ques4. how to get the recorddata if you have multiple record id without using wire and apex
 
  wire or connected call which get called first.
  Deeplinkks in FSL mobile app
- custom LWC for mobile 
+ custom LWC for mobile : https://webkul.com/blog/add-quick-action-in-field-service-mobile-app/ only as lightning_recordAction
+
  ways ssrvice Territory is getting populate on Service appointment - using map polygons , during book appointment actions 
  service Territory is mandatory on which object? -- service appointment
 
@@ -18,9 +22,12 @@ How can dispatcher schedule multiple service appointemnt to multiple service res
 What is disconnected callBack when it comes in picture in parent chils?
 Event listners in LWC
 Is there anything provide bY LWC at the time of pageload -- data is been loaded in table , so that it can get faster?
-we are migrating the data from legacy system to salesforce, we need to maintain refrential integrity  i.e create date other date should maintain and
+we are migrating the data from legacy system to salesforce, we need to maintain refrential integrity  i.e create date other date should maintain andEnable "Set Audit Fields upon Record Creation" and "Update Records with Inactive Owners" User Permissions
 how ypu will manage the Inactive user that are related to record?
- 
+
+Enable "Set Audit Fields upon Record Creation" and "Update Records with Inactive Owners" User Permissions
+
+
  
  Ques1 : we have three different objects Account, contact & opportunity. We inserted them one by one if any error come whlile
 inserting the opportunity we need to role back account and contact that has been inserted.
@@ -28,6 +35,7 @@ inserting the opportunity we need to role back account and contact that has been
 Ques2 :how to get the record data without using apex in lWC based on recordId. -- getReecords
 Ques3. Making an Api call using LWC. -- fetch Api
 Ques4. how to get the recorddata if you have multiple record id without using wire and apex
+Ques5 . WHat is multiday /complex work
 
 
 
@@ -35,7 +43,7 @@ Ques4. how to get the recorddata if you have multiple record id without using wi
 Field service Lightning:
 
 Suppose we have two partners(contractors), and In a service territory both partner works , so we need to think about the way that if it assign to Quue A ti will assign to partner a and 
-if Queue B , then partner B.
+if Queue B , then partner B.: it depends upon the customer (in this case it can be account and if account have any preferred and required resource it can get assifgnes to respective contractor)
 Suppose you have implemented FSL for helath care client , on ap particular day , all resource are occupied for that service territory, suppose an energency come we need to send a
 resource immediately -- we can utilize shifts or  we can run inday scheduling optimization for the territory to take prioty resource in prefence
 how you configure territory assignment.
