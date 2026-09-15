@@ -138,3 +138,16 @@ Decorator: Wrapper class.
 bulkify pattern: the code should be bulfify and run on the bulk data
 strategy: Encapsulates different algorithms or behaviors and makes them interchangeable at runtime.
 Facade pattern: single implemetation class for different type of operstion required , writting different classes is ot good , implemet a single class with whole logic and call it.
+
+governor limits and exception:
+
+Too Many SOQL Queries 101
+Heap size error - 10 MB , 25 MB
+The heap size is the amount of memory allocated to objects that are being defined in your Apex code. 
+Best Practices for Staying Within the Apex Heap Limit
+Do not use class-level variables to store large amounts of data-- dont use variable in top , use the variable in methods so that if method is complete it can free up heap size
+Use SOQL For Loops to iterate and process data from large queries rather than loading all results into a single collection. -- since in for loop record comes in batch of 
+200 and for every batch the last 200 records memory get free.
+Construct methods and loops that allow variables to go out of scope as soon as they are no longer needed.-- define the variable locally
+CPU limit time exceed - 10000ms , 60000ms
+List index out of bound 0
