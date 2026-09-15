@@ -78,3 +78,56 @@ Implement the interface class
 Implement the concerete class(Trigger dispatcher where the main helper class will be selected and code for recursion and bypass
 Implemet trigger which will rcall triggerdispatcher.run ( run is the method in trigger dispatcher where we are selecting apex class on runtime)
 the mainapex class will implemet the interface with all the method and logic.
+
+Q14. why Queuable is prefered over future?
+A14. Queueable is preferred over @future because it supports non-primitive objects, returns an AsyncApexJob ID for monitoring, and allows job chaining.
+
+Q15. Mixed dml error:
+A15. use system.runas(u), future or queuable cass to seprate the transaction.
+
+Q16:How would you refactor an existing trigger that has SOQL/DML inside loops in production?
+A16: The 4 Rules for Safe Refactoring
+Set & Map Accumulation: Loop once over Trigger.new to extract unique foreign keys (Set<Id>).
+Single SOQL: Query with WHERE Id IN :idSet into a Map<Id, sObject>.
+Map De-duplication for DML: If multiple children point to the same parent, storing updates in a Map<Id, SObject> prevents the runtime error: System.ListException: Duplicate id in list.
+Database.insert(records, false): Using allOrNone = false ensures one invalid record doesn't block the entire 200-record batch, while capturing errors for observability.
+
+Production Deployment Strategy
+Deploy to Sandbox: Run a full bulk test with 200–500 records to verify governor limit usage via the Apex Execution Log (Limits.getQueries() and Limits.getDMLStatements()).
+Feature Flag / Bypass: Deploy with a Custom Permission or Custom Metadata bypass switch so you can instantly fall back if unexpected regressions appear.
+Off-Peak Deployment: Push during low-traffic windows to prevent database locks while active transactions touch the object.
+
+
+Q17:How would you debug an intermittent governor limit exception that occurs only in PROD?
+An intermittent governor limit exception in Production—such as Apex CPU time limit exceeded, Too many SOQL queries: 101, or Row lock error (UNABLE_TO_LOCK_ROW)—
+that never reproduces in Sandboxes is almost always driven by production data volume, data skew, user concurrency, or uncontrolled trigger re-entrancy.
+
+Step 1: Capture Evidence Without Disrupting Production:
+Check Apex Exception Email & Flow Logs
+Review Event Monitoring (EventLogFiles):
+argeted Debug Logging: Set a User Trace Flag specifically on the automated process user, integration user, or the user profile most frequently triggering the error.
+
+Q18. what is LWC lifecycle hooks?
+An18: A lifecycle hook is the callback method triggered at the specific phase of a component lifecycle instance.
+Mounting Phase: constructor, connected callback, rendered callback
+UnMounting phase: disconnected callback
+error Phase: errorCallback();
+
+Compoennt LC -->  CONSTRUCTOR --> public property Updated --> comp inserted in DOM --> CONNECTED CALLBACK --> Child comp ( cons--> connected__> rendered) --> Parent rendered callback
+
+ConnectedCallback()--> use it to perform initializtion task , such as getch data or listening the events
+do not use it  to change the state of component , such as loading values or setting properties, use getter and setter instead.
+
+rendered callBAck:  dont use to change the state or update the property of a compoennt
+dont update the wire adapter object configuration property as it result in infinite loop.
+
+disconnectedcallback:  fires when a compoennt is removed from the DOM.
+
+Bubble and and composite:
+
+bubble:false, composite false -- the componet cant called any of its parent ( howver since its been directly used in Parent child to parent communication happen)
+bubble : true , composite : false: only to the immediate parent
+bubble: true , composite: true ) ( directly to grand parent howver it will call through parent only since you can use child compoennt directly to parent)
+
+
+
