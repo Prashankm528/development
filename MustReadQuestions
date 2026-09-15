@@ -123,11 +123,18 @@ dont update the wire adapter object configuration property as it result in infin
 
 disconnectedcallback:  fires when a compoennt is removed from the DOM.
 
-Bubble and and composite:
+Ques 19.Bubble and and composite:
 
 bubble:false, composite false -- the componet cant called any of its parent ( howver since its been directly used in Parent child to parent communication happen)
 bubble : true , composite : false: only to the immediate parent
 bubble: true , composite: true ) ( directly to grand parent howver it will call through parent only since you can use child compoennt directly to parent)
 
 
-
+Ques20. Apex design PAttern:
+Ans 20. Singelton: Ensures only one instance of a class exists per transaction, Avoid duplicate SOQL queries & unnecessary object creation,Caching config/settings, sharing state across triggers in one transaction.
+FActory: trigger factory pattern, encapsulate code , This pattern encapsulates the object creation process. The factory returns different implementations of a shared interface, depending on the inputs or context 
+provided by the user.
+Decorator: Wrapper class.
+bulkify pattern: the code should be bulfify and run on the bulk data
+strategy: Encapsulates different algorithms or behaviors and makes them interchangeable at runtime.
+Facade pattern: single implemetation class for different type of operstion required , writting different classes is ot good , implemet a single class with whole logic and call it.
