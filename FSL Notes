@@ -1,5 +1,27 @@
 FSL Notes:
 
+Limits of FSL Flows:
+
+1. cant add the fault element.
+2. Lightning components are not allowed.
+3.When uploading images in flows, the content document IDs parameter isn’t supported. Admins must create a flow confirmation screen to show which images were uploaded.
+  since FSL mobile app work in offline mode and ContentDocument and ContentVersion records don't exist in Salesforce until the device syncs with the server.
+  the only toutput parameter is File NAme
+4.Flows don’t support the Section screen component.
+5.Rich text in flows doesn’t show color in the Field Service mobile app.
+6. you cant use the Look up instead use Record choice set.
+7. Email alert actions arent supported in the flow.
+8.Paused flows aren’t supported. If you left a flow in progress or exit the Field Service mobile app, you can’t resume the flow where you left off.
+9. For eval() functions, the boolean values true and false are case-sensitive.
+10.Hardcoded ID values must be 18 digits long. 15-digit values aren’t supported.
+11. The offline runtime engine cannot dynamically traverse relationship queries (Object.Relationship__r.Field__c). It only recognizes direct, 
+flat field API names on that specific record variable (e.g., {!varWorkOrder.AccountId} or {!varWorkOrder.Status}). fix: get record and then fill
+12. On the FSL Mobile app, the mobile runtime ignores that default setting—the picklist renders blank/empty, and if the user skips it, no value is stored.
+
+Limits of FSL:
+
+1.
+
 Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
 Ans1 .  use getAppointmentInsight class method.
         // FSL.ScheduleService class
