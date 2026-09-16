@@ -1,5 +1,31 @@
 Ques1. Introduction
 
+Thank you for having me today.
+
+To summarize my background, I bring over 12 years of IT experience, with the last 11 years focused purely on the Salesforce ecosystem 
+pecializing in end-to-end solution design, architecture, and development. My core domain expertise spans Service Cloud, Health Cloud, 
+custom cloud implementations, and specifically Salesforce Field Service (FSL).
+
+My experience in FSL is notable. I have around 4+ of FSL experinece and have configure and customize the functionality according
+to the client requirement. Have work upon mosty all object of FSL including , work plan, shifts .I specialize in fine-tuning scheduling policies, work rules, 
+and optimizing the FSL Mobile App.   I’ve also implemented key add-ons like Visual Remote Assistant (VRA), Appointment Assistant, and multi-channel messaging 
+using Digital Engagement licenses.
+
+On the development front, I have architected and built over 35 production-grade, responsive LWCs with a strong focus on reusability and 
+dynamic performance, alongside robust, scalable Apex frameworks designed around bulkification and governor limits. 
+I also design offline-ready Field Service Mobile Flows
+
+Throughout my career, I’ve consistently worked in client-facing roles—translating complex business problems into actionable technical designs, 
+conducting discovery, and validating architectural approaches through targeted POCs. Currently, 
+I lead a team of 3 developers while serving as the people manager for 5 resources, driving technical delivery and sprint planning.
+
+Beyond project delivery, I actively contribute to organizational culture. I conduct technical interviews for lateral hires, 
+lead training bootcamps on FSL and LWC for onboarding engineers, and participate in corporate CSR initiatives.
+
+
+I’m very excited about this role because it aligns directly with my core strength: 
+designing scalable, real-world Field Service solutions on the platform."
+
 Ques 2. Order of execution in salesforce:
 Ans 2. https://www.salesforceben.com/learn-salesforce-order-of-execution/
 
@@ -139,9 +165,10 @@ bulkify pattern: the code should be bulfify and run on the bulk data
 strategy: Encapsulates different algorithms or behaviors and makes them interchangeable at runtime.
 Facade pattern: single implemetation class for different type of operstion required , writting different classes is ot good , implemet a single class with whole logic and call it.
 
-governor limits and exception:
+Ques 21: governor limits and exception:
 
 Too Many SOQL Queries 101
+List index out of bound 0
 Heap size error - 10 MB , 25 MB
 The heap size is the amount of memory allocated to objects that are being defined in your Apex code. 
 Best Practices for Staying Within the Apex Heap Limit
@@ -175,4 +202,56 @@ Apex code best Practices:
 8. Exception Handling in Apex Code ( try and catch).
 9. one trigger per object
 10 APex naming conventions-Code formatting & Naming Conventions
-List index out of bound 0
+
+Q22. How do you design for LDV (Large Data Volumes) in Salesforce?What strategies would you use to avoid governor limit exceptions when processing millions of records?
+Ans22. If your deployment has tens of thousands of users, tens of millions of records, or hundreds of gigabytes of total record storage, you have a large data volume.
+before desigining the solution for large data volume , i will consider the limits and challengea that can arise.
+large data volumes(LDV) can lead to sluggish performance, including slower queries, slower search and list views, and slower sandbox refreshing.( real time example
+summary by country sceen , Read only screen.
+
+STrategies for LDV:
+
+Mitigating Data Skew
+1. Data skew -- Data skew happens when more than 10,000 child records are associated which the same parent record within an org. due to whih reord locking and sharing calculation can take time even the performance of the org can
+degrade if not handled. Distribute child records across a pool of dummy/placeholder accounts.
+ownership skew: When a large number of records with the same object type are owned by a single user like for integration user.Assign high-volume records to users without a role, or distribute ownership across multiple generic system users.
+Lookup skew: Lookup skew happens when a very large number of records are associated with a single record in the lookup object. Distribute lookup lookups across multiple placeholder records; use asynchronous batching to sequence updates.
+
+
+(Archival/ingestion)
+1.Levraging external object (data virtulization)
+With a data-tiering strategy that spreads data across multiple objects and brings it in on demand from another object or external store, 
+you avoid both storing large amounts of data in your org, and the performance issues associated with LDV.
+alesforce Connect uses external data sources to access data that's stored outside your Salesforce organization. 
+Files Connect uses external data sources to access third-party content systems.
+external lookup: when we can relate object using salesforce 18 dighit id i.e when you are virtualizing the record from another slaesforce org.
+indirect lookup : when data is from some other and relating the parent and child
+
+2 Big Objects / Cache
+
+3. Bulk API 2.0:
+To avoid transaction limits (CPU timeout, heap size, 50,000 SOQL row limits), move heavy workloads to asynchronous frameworks:
+Batch Apex with Database.QueryLocator:
+Using a QueryLocator raises the standard 50,000-row SOQL query limit to up to 50 million records.
+Keep the batch scope small (e.g., Database.executeBatch(new MyBatch(), 200) or even lower if triggers/flows execute complex logic on each chunk) 
+to prevent CPU timeouts and heap overflow.
+
+Bulk API 2.0 for Data Loads:: When loading or extracting millions of records externally, use Bulk API 2.0, 
+which handles automatic file chunking and operates asynchronously against the background processing queue.
+
+Database & Storage Architecture:
+1. Use skinny Tables(Salesforce need to enable): For heavily queried tables with millions of rows, contact Salesforce Support to create a Skinny Table.
+It combines standard and custom fields into a single underlying database view, eliminating the runtime table join between Account and Account_CustomFields.
+2. Move cold/historical data out of transactional SObjects.
+Use Salesforce Big Objects (capable of holding billions of records, queried via SOQL with defined index keys) for historical audit trails.
+Offload data to external data lakes (e.g., AWS S3, Snowflake) and surface it in real time via Salesforce Connect / 
+External Objects (OData) without consuming platform storage.
+
+Managing Apex Runtime Limits During Large Runs
+1. Disable / Bypass Unnecessary Automation:During large data updates or batches, disable non-essential triggers, flows, and duplicate rules using a configuration bypass pattern
+2. Heap Management in Batches:Avoid storing class-level collections that accumulate across batch iterations. Use Database.Stateful strictly for tracking aggregates/counters.
+
+Ques23: 
+
+
+
