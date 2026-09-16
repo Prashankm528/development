@@ -148,6 +148,31 @@ Best Practices for Staying Within the Apex Heap Limit
 Do not use class-level variables to store large amounts of data-- dont use variable in top , use the variable in methods so that if method is complete it can free up heap size
 Use SOQL For Loops to iterate and process data from large queries rather than loading all results into a single collection. -- since in for loop record comes in batch of 
 200 and for every batch the last 200 records memory get free.
-Construct methods and loops that allow variables to go out of scope as soon as they are no longer needed.-- define the variable locally
+Construct methods and loops that allow variables to go out of scope as soon as they are no longer needed.-- define the variable locally,
+Structure your logic into smaller, dedicated methods or nested code blocks ({ }) so that local variables naturally die (go "out of scope") as soon as their enclosing block finishes.
+
 CPU limit time exceed - 10000ms , 60000ms
+The apex CPU time limit exceeded means your transaction is taking too much time to complete the code execution.
+Best way to debug is :1.  using debug logs set to the finest , code unit starts and code units ends and check for LIMIT_USAGE_FOR_NS:. 2.Put limit method 3.Use apex log
+analyzer and check call tree.
+How to avoid?
+1.Avoid Multiple automation on a Single Object
+2.Trigger Framework
+3. Avoid multiple Validation Rules and formula fields
+4. Avaoid nested for loops try to utilize collections.
+5. use Async Apex 
+6. try to use aggregrate SOQL Query - since not counted against CPU time.
+7. use query plan to check how well the query is performing.
+
+Apex code best Practices:
+1.Bulkify Apex code
+2. Avoid SOQL & DML inside for Loop
+3. Use a SOQL query for loop.
+4. use selective query and and use index field filters, avaoid query fields which are not used.
+5 use collection mostly Map
+6. Use limit methods, Avoid harcoding of Ids
+7.Use Database Methods while doing DML operation
+8. Exception Handling in Apex Code ( try and catch).
+9. one trigger per object
+10 APex naming conventions-Code formatting & Naming Conventions
 List index out of bound 0
