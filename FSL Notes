@@ -1,368 +1,416 @@
-FSL Notes:
-
-Limits of FSL Flows:
-
-1. cant add the fault element.
-2. Lightning components are not allowed.
-3.When uploading images in flows, the content document IDs parameter isn’t supported. Admins must create a flow confirmation screen to show which images were uploaded.
-  since FSL mobile app work in offline mode and ContentDocument and ContentVersion records don't exist in Salesforce until the device syncs with the server.
-  the only toutput parameter is File NAme
-4.Flows don’t support the Section screen component.
-5.Rich text in flows doesn’t show color in the Field Service mobile app.
-6. you cant use the Look up instead use Record choice set.
-7. Email alert actions arent supported in the flow.
-8.Paused flows aren’t supported. If you left a flow in progress or exit the Field Service mobile app, you can’t resume the flow where you left off.
-9. For eval() functions, the boolean values true and false are case-sensitive.
-10.Hardcoded ID values must be 18 digits long. 15-digit values aren’t supported.
-11. The offline runtime engine cannot dynamically traverse relationship queries (Object.Relationship__r.Field__c). It only recognizes direct, 
-flat field API names on that specific record variable (e.g., {!varWorkOrder.AccountId} or {!varWorkOrder.Status}). fix: get record and then fill
-12. On the FSL Mobile app, the mobile runtime ignores that default setting—the picklist renders blank/empty, and if the user skips it, no value is stored.
-
-Limits of FSL:
-
-1.
-
-
-Ques: How to handle filling Blanks on the Gantt in case of early finish or job cancellations.
-Ans: Use In day Optimization: run it manually or schedule it for every hour or every day
-SLiding service Appointment
-Resource scheduling and optimization(RSO)
-fill GAp's in SR schedule with AGentforce
-user permission needed: use agentforce default agent, Access Agent topicsand Action for field service
-work for a single day , if not provided in single date it willt ake for today.
-open agentforce : give phrase: Fill the gaps in Emma White's schedule on
-Drip feed
-
-
-before ESO:
-Fill In schedule
-Scheduling policies  
-Group Nearby Appointments
-
-
-difference between scheduling optimization and ESO:
-
-"Point-to-point predictive routing... if your region has the required map coverage level"
-How it works:
-
-Legacy Engine: Frequently relied on straight-line ("as the crow flies") aerial distance multiplied by an average speed, or
-generic street-level routing without dynamic conditions.
-
-ESO Engine: Uses Point-to-Point Predictive Routing. It maps the actual turn-by-turn road network and integrates historical, 
-time-of-day traffic patterns (e.g., driving 10 miles at 8:30 AM takes 35 minutes, but the same route at 1:00 PM takes 15 minutes).
-     
-
-for using sliding and sliding reshuffle -- you need to invoke the Inday or RSO, schedule propgarmatically for thatd ay
-SA field "Schedule Over Lower Priority Appointment" should be set to true on high prio SA, otherwise lower prio SA do not slide. 
-
-
-ESO(Enhance scheduling and optimization): Summer 23:
-enhanced architecture and services are more efficient and improve scalability, performance, and schedule quality. 
-From Setup, in the Quick Find box, enter Field Service, and then select Field Service Settings.
-To use the enhanced features, select Field Service Enhanced Scheduling and Optimization and then save your changes
-
-Point-to-Point Predictive Routing( take care of tolls and traffic)
-sliding and sliding/ reshuffle Appointment:
-Select Sliding only to enable service appointments to move between time slots for the same resource within the same shift.
-nable service appointments to move between time slots on any day or to another resource.
-Travel Mode: travel mode is assigned to that territory or territory member
-Avoiding Apex CPU timeouts:Enable Enhanced Scheduling and Optimization at least for the territories that get the Apex CPU timeout exception. 
-Enhanced Scheduling and Optimization calculates the time slots in a service outside the Salesforce org where no CPU timeout limits apply.Reduce the horizon of the Appointment Booking and Get Candidates operations
-operating hour holiday: Holiday Management
-Flexible Breaks: Add multiple breaks to availability-based work rules. Flexible break times are calculated at the start of each work day.
-Minimize Gaps Objective: Ensure mobile workers maximize their presence in high-volume areas by completing all appointments within a specific area before moving to the next.
-Use the Group Nearby Appointments objective to prefer reducing the number of service resources working at nearby appointments on a given day. 
-Offsite Appointments: Indicates whether an appointment can be done remotely, with no travel time added to the schedule.
-Optimization Request Owner
-
-How to craete a good scheduling policy:
-Filter out as many candidates as possible using more Database work rules in your scheduling policy.
-Database rules are applied at the SOQL query clause level. These rules immediately disqualify resources and query only the resources that you need, 
-so performance isn’t impacted. The database work rule types include:
-Match Territory
-Working Territories
-Maximum Travel from Home
-Extended Match
-
-other work rule:
-Match boolean
-Match fields(partner based routing)
-Match skills
-
-
-How optimization conflicts manage in FSL:
-dispatcher activates resource schedule optimization for a resource that’s part of a dataset being optimized through in-day optimization. 
-If an overlap is detected, a message is shown and the newly initiated optimization request is aborted. Similarly, when a dispatcher tries to make changes to the Gantt,
-which is being processed by a background optimization request such as in-day optimization, a message is shown notifying the dispatcher that their changes can 
-create unwanted results.
-
-
-Agentforce for dispatchers:
-From the App Launcher, enter Agent, and then select the Agentforce Studio app.
-On the Agents tab, click New Agent.
-Select the Field Service Dispatching agent template.
-Enter the agent’s name and then click Let’s Go.
-Review your agent in Agentforce Builder.
-In the Settings section, define the settings that determine how your agent behaves in conversations, such as system messages and language settings.
-In the Subagents section, manage and customize your agent’s subagents and actions.
-In the Data section, select a data library. The Answer Questions with Knowledge action grounds your agent’s responses with it.
-
-Permission needed:
-Einstein Field Service User  permission set.
-Edit the Enabled Agent Access settings.
-Select the Agentforce Employee agents that you want to give users access to and then click Save.
-
-Agentforce for Mobile workers:
-Einstein Field Service User: Assign this permission set to all Field Service Einstein users, including admin and mobile users.
-Prompt Template Manager: Assign this permission set to users who create and manage prompt templates in Prompt Builder.
-Prompt Template User
-
-
-
-Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
-Ans1 .  use getAppointmentInsight class method.
-        // FSL.ScheduleService class
-        // The getAppointmentInsights method returns a AppointmentInsightsResult result
-        FSL.AppointmentInsightsResult myresult = new FSL.AppointmentInsightsResult();
-        
-        // static FSL.AppointmentInsightsResult 
-        myresult = FSL.ScheduleService.getAppointmentInsights(Service Appointment ID,Scheduling Policy ID);
-        
-        System.debug(myresult);
-
-or use optimization insights(not supportred for RSO)
-There are four optimization insights components: summary (1), metrics (2), key performance indicators (3), and health check (4
-
-Optimization Profile has access to the OAASRestInsights and OAASRestHealthCheck Apex classes.
-
-
-Ques2. How you fetch slots programitaclly?
-Ans2. Call FSL AppointmentBookingService.GetSlots()
-  slots =
-  FSL.AppointmentBookingService.GetSlots(
-      serviceAppointmentId,
-      schedulingPolicy.Id,
-      operatingHours,
-      tz,
-      false
-  );
-tz is time zone
-
-Ques3: Tell me about any customization you did in FSL?
-Ans3. One of the most complex FSL developments I worked on was building a custom Appointment Availability REST API that allowed external systems to retrieve available installation appointment slots using Salesforce Field Service's scheduling engine.
-
-The requirement was that before creating an actual work order, the external order management system needed to know what appointment slots were available for a customer based on location, products being installed, and various business constraints.
-
-To achieve this, I developed a custom Apex REST service integrated with Salesforce FSL."
-
-1. Service Territory Identification
-
-"The first functionality I implemented was dynamically determining the correct Service Territory based on the customer's ZIP code and provider code.
-
-The API queried a ZIP-to-Service Territory mapping object and validated that a valid territory existed before scheduling could proceed."
-
-Business Value:
-Ensured appointments were only offered within valid service coverage areas.
-
-2. Redo Order Validation
-
-"I implemented a Redo Order validation process.
-
-If the request was marked as a Redo installation, the system checked the original completed Work Order and verified that it was not older than 90 days.
-
-If the work order exceeded the allowed period, the API returned a business error and prevented scheduling."
-
-Business Rule:
-Redo appointments are only allowed within 90 days of completion.
-
-3.SKU-Based Scheduling Logic
-
-"I developed custom SKU validation logic using Custom Metadata and Product records.
-
-The API evaluated all products being installed and checked whether any SKU required additional lead time.
-
-Each product could have a SKU-specific delay value, and the system automatically calculated the maximum delay required among all products."
-
-Example:
-
-Standard Installation = 0 days
-Special Order Product = 5 days
-
-The API automatically shifted the scheduling window by 5 days.
-
-Business Value:
-Prevented appointments from being booked before inventory was available.
-
-5. Vehicle Capacity Validation
-
-"I implemented a custom business rule related to technician vehicle capacity.
-
-Some territories had a flag indicating vehicle limitations.
-
-The API inspected product attributes such as TV dimensions and blocked scheduling when the product exceeded the territory's transportation limits."
-
-For example:
-
-TV height >= 50 inches
-Territory vehicle limitation enabled
-
-Result:
-
-Scheduling blocked
-Custom error returned
-
-Business Value:
-Prevented appointments that technicians physically could not complete.
-
-11. Time Zone and Slot Filtering Logic
-
-"I implemented custom filtering rules after receiving slots from FSL.
-
-Examples included:
-
-Excluding same-day appointments
-Excluding next-day appointments after a configured cutoff time (8 PM local territory time)
-DateTime eightPmInGmtOfLocalTimeZone =
-    getEightPmInGmtOfLocalTimeZone(
-        zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
+  FSL Notes:
+  
+  Limits of FSL Flows:
+  
+  1. cant add the fault element.
+  2. Lightning components are not allowed.
+  3.When uploading images in flows, the content document IDs parameter isn’t supported. Admins must create a flow confirmation screen to show which images were uploaded.
+    since FSL mobile app work in offline mode and ContentDocument and ContentVersion records don't exist in Salesforce until the device syncs with the server.
+    the only toutput parameter is File NAme
+  4.Flows don’t support the Section screen component.
+  5.Rich text in flows doesn’t show color in the Field Service mobile app.
+  6. you cant use the Look up instead use Record choice set.
+  7. Email alert actions arent supported in the flow.
+  8.Paused flows aren’t supported. If you left a flow in progress or exit the Field Service mobile app, you can’t resume the flow where you left off.
+  9. For eval() functions, the boolean values true and false are case-sensitive.
+  10.Hardcoded ID values must be 18 digits long. 15-digit values aren’t supported.
+  11. The offline runtime engine cannot dynamically traverse relationship queries (Object.Relationship__r.Field__c). It only recognizes direct, 
+  flat field API names on that specific record variable (e.g., {!varWorkOrder.AccountId} or {!varWorkOrder.Status}). fix: get record and then fill
+  12. On the FSL Mobile app, the mobile runtime ignores that default setting—the picklist renders blank/empty, and if the user skips it, no value is stored.
+  
+  Limits of FSL:
+  
+  1.Territory utilization calculation doesn’t consider secondary territory members.
+  2. With the Gantt chart Timezone field set to Territory Timezone in Field Service Settings (under Dispatcher Console UI, Gantt Configurations), 
+if both primary and secondary service territories are selected, the service resource is shown in the secondary service territory only if it has the 
+same time zone as the primary service territory. 
+3.The service appointment list in the Classic Dispatch Console stops loading data after 3,000 service appointment records are loaded from the server. 
+When that limit is reached, you receive an error that the scheduling horizon is too long.
+4. Service report size can not be of more than 30 mb and for document builder its 100 mb
+5. You can’t create a parent-child relationship between a custom object and Time Slot where Time Slot is the parent object.
+6.Match Fields work rules are supported for global, in-day, and resource optimization only when you're using Enhanced Scheduling and Optimization.
+7. Service reports can’t be created on service appointments whose parent records are assets, accounts, leads, or opportunities.
+8.Future service appointments scheduled to inactive resources aren’t considered in scheduling and optimization. You must manually unschedule these appointments.
+  
+  
+  Ques: How to handle filling Blanks on the Gantt in case of early finish or job cancellations.
+  Ans: Use In day Optimization: run it manually or schedule it for every hour or every day
+  SLiding service Appointment
+  Resource scheduling and optimization(RSO)
+  fill GAp's in SR schedule with AGentforce
+  user permission needed: use agentforce default agent, Access Agent topicsand Action for field service
+  work for a single day , if not provided in single date it willt ake for today.
+  open agentforce : give phrase: Fill the gaps in Emma White's schedule on
+  Drip feed
+  
+  
+  before ESO:
+  Fill In schedule
+  Scheduling policies  
+  Group Nearby Appointments
+  
+  
+  difference between scheduling optimization and ESO:
+  
+  "Point-to-point predictive routing... if your region has the required map coverage level"
+  How it works:
+  
+  Legacy Engine: Frequently relied on straight-line ("as the crow flies") aerial distance multiplied by an average speed, or
+  generic street-level routing without dynamic conditions.
+  
+  ESO Engine: Uses Point-to-Point Predictive Routing. It maps the actual turn-by-turn road network and integrates historical, 
+  time-of-day traffic patterns (e.g., driving 10 miles at 8:30 AM takes 35 minutes, but the same route at 1:00 PM takes 15 minutes).
+       
+  
+  for using sliding and sliding reshuffle -- you need to invoke the Inday or RSO, schedule propgarmatically for thatd ay
+  SA field "Schedule Over Lower Priority Appointment" should be set to true on high prio SA, otherwise lower prio SA do not slide. 
+  
+  
+  ESO(Enhance scheduling and optimization): Summer 23:
+  enhanced architecture and services are more efficient and improve scalability, performance, and schedule quality. 
+  From Setup, in the Quick Find box, enter Field Service, and then select Field Service Settings.
+  To use the enhanced features, select Field Service Enhanced Scheduling and Optimization and then save your changes
+  
+  Point-to-Point Predictive Routing( take care of tolls and traffic)
+  sliding and sliding/ reshuffle Appointment:
+  Select Sliding only to enable service appointments to move between time slots for the same resource within the same shift.
+  nable service appointments to move between time slots on any day or to another resource.
+  Travel Mode: travel mode is assigned to that territory or territory member
+  Avoiding Apex CPU timeouts:Enable Enhanced Scheduling and Optimization at least for the territories that get the Apex CPU timeout exception. 
+  Enhanced Scheduling and Optimization calculates the time slots in a service outside the Salesforce org where no CPU timeout limits apply.Reduce the horizon of the Appointment Booking and Get Candidates operations
+  operating hour holiday: Holiday Management
+  Flexible Breaks: Add multiple breaks to availability-based work rules. Flexible break times are calculated at the start of each work day.
+  Minimize Gaps Objective: Ensure mobile workers maximize their presence in high-volume areas by completing all appointments within a specific area before moving to the next.
+  Use the Group Nearby Appointments objective to prefer reducing the number of service resources working at nearby appointments on a given day. 
+  Offsite Appointments: Indicates whether an appointment can be done remotely, with no travel time added to the schedule.
+  Optimization Request Owner
+  
+  How to craete a good scheduling policy:
+  Filter out as many candidates as possible using more Database work rules in your scheduling policy.
+  Database rules are applied at the SOQL query clause level. These rules immediately disqualify resources and query only the resources that you need, 
+  so performance isn’t impacted. The database work rule types include:
+  Match Territory
+  Working Territories
+  Maximum Travel from Home
+  Extended Match
+  
+  other work rule:
+  Match boolean
+  Match fields(partner based routing)
+  Match skills
+  
+  
+  How optimization conflicts manage in FSL:
+  dispatcher activates resource schedule optimization for a resource that’s part of a dataset being optimized through in-day optimization. 
+  If an overlap is detected, a message is shown and the newly initiated optimization request is aborted. Similarly, when a dispatcher tries to make changes to the Gantt,
+  which is being processed by a background optimization request such as in-day optimization, a message is shown notifying the dispatcher that their changes can 
+  create unwanted results.
+  
+  
+  Agentforce for dispatchers:
+  From the App Launcher, enter Agent, and then select the Agentforce Studio app.
+  On the Agents tab, click New Agent.
+  Select the Field Service Dispatching agent template.
+  Enter the agent’s name and then click Let’s Go.
+  Review your agent in Agentforce Builder.
+  In the Settings section, define the settings that determine how your agent behaves in conversations, such as system messages and language settings.
+  In the Subagents section, manage and customize your agent’s subagents and actions.
+  In the Data section, select a data library. The Answer Questions with Knowledge action grounds your agent’s responses with it.
+  
+  Permission needed:
+  Einstein Field Service User  permission set.
+  Edit the Enabled Agent Access settings.
+  Select the Agentforce Employee agents that you want to give users access to and then click Save.
+  
+  Agentforce for Mobile workers:
+  Einstein Field Service User: Assign this permission set to all Field Service Einstein users, including admin and mobile users.
+  Prompt Template Manager: Assign this permission set to users who create and manage prompt templates in Prompt Builder.
+  Prompt Template User
+  
+  
+  
+  Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
+  Ans1 .  use getAppointmentInsight class method.
+          // FSL.ScheduleService class
+          // The getAppointmentInsights method returns a AppointmentInsightsResult result
+          FSL.AppointmentInsightsResult myresult = new FSL.AppointmentInsightsResult();
+          
+          // static FSL.AppointmentInsightsResult 
+          myresult = FSL.ScheduleService.getAppointmentInsights(Service Appointment ID,Scheduling Policy ID);
+          
+          System.debug(myresult);
+  
+  or use optimization insights(not supportred for RSO)
+  There are four optimization insights components: summary (1), metrics (2), key performance indicators (3), and health check (4
+  
+  Optimization Profile has access to the OAASRestInsights and OAASRestHealthCheck Apex classes.
+  
+  
+  Ques2. How you fetch slots programitaclly?
+  Ans2. Call FSL AppointmentBookingService.GetSlots()
+    slots =
+    FSL.AppointmentBookingService.GetSlots(
+        serviceAppointmentId,
+        schedulingPolicy.Id,
+        operatingHours,
+        tz,
+        false
     );
-Converting slots based on territory-specific time zones
+  tz is time zone
+  
+  Ques3: Tell me about any customization you did in FSL?
+  Ans3. One of the most complex FSL developments I worked on was building a custom Appointment Availability REST API that allowed external systems to retrieve available installation appointment slots using Salesforce Field Service's scheduling engine.
+  
+  The requirement was that before creating an actual work order, the external order management system needed to know what appointment slots were available for a customer based on location, products being installed, and various business constraints.
+  
+  To achieve this, I developed a custom Apex REST service integrated with Salesforce FSL."
+  
+  1. Service Territory Identification
+  
+  "The first functionality I implemented was dynamically determining the correct Service Territory based on the customer's ZIP code and provider code.
+  
+  The API queried a ZIP-to-Service Territory mapping object and validated that a valid territory existed before scheduling could proceed."
+  
+  Business Value:
+  Ensured appointments were only offered within valid service coverage areas.
+  
+  2. Redo Order Validation
+  
+  "I implemented a Redo Order validation process.
+  
+  If the request was marked as a Redo installation, the system checked the original completed Work Order and verified that it was not older than 90 days.
+  
+  If the work order exceeded the allowed period, the API returned a business error and prevented scheduling."
+  
+  Business Rule:
+  Redo appointments are only allowed within 90 days of completion.
+  
+  3.SKU-Based Scheduling Logic
+  
+  "I developed custom SKU validation logic using Custom Metadata and Product records.
+  
+  The API evaluated all products being installed and checked whether any SKU required additional lead time.
+  
+  Each product could have a SKU-specific delay value, and the system automatically calculated the maximum delay required among all products."
+  
+  Example:
+  
+  Standard Installation = 0 days
+  Special Order Product = 5 days
+  
+  The API automatically shifted the scheduling window by 5 days.
+  
+  Business Value:
+  Prevented appointments from being booked before inventory was available.
+  
+  5. Vehicle Capacity Validation
+  
+  "I implemented a custom business rule related to technician vehicle capacity.
+  
+  Some territories had a flag indicating vehicle limitations.
+  
+  The API inspected product attributes such as TV dimensions and blocked scheduling when the product exceeded the territory's transportation limits."
+  
+  For example:
+  
+  TV height >= 50 inches
+  Territory vehicle limitation enabled
+  
+  Result:
+  
+  Scheduling blocked
+  Custom error returned
+  
+  Business Value:
+  Prevented appointments that technicians physically could not complete.
+  
+  11. Time Zone and Slot Filtering Logic
+  
+  "I implemented custom filtering rules after receiving slots from FSL.
+  
+  Examples included:
+  
+  Excluding same-day appointments
+  Excluding next-day appointments after a configured cutoff time (8 PM local territory time)
+  DateTime eightPmInGmtOfLocalTimeZone =
+      getEightPmInGmtOfLocalTimeZone(
+          zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
+      );
+  Converting slots based on territory-specific time zones
+  
+  System.TimeZone tz =
+      System.TimeZone.getTimeZone(
+          zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
+      );
+  
+  Timezone targetTimeZone =
+      TimeZone.getTimeZone(localTimeZone);
+  
+  This ensured customers only saw valid appointment options."
+  
+  
+  Q4. How you do automatic scheduling through FSL engine?
+  Ans4. FSL.ScheduleService.schedule()
+  
+  Q5. Any oter customization doen in terms of FSL?
+  A5. "I implemented bi-directional timezone conversion between external systems and Salesforce FSL. 
+  Arrival windows were converted from local territory time to GMT for storage and converted back when displayed to dispatchers and technicians."
+  
+  API send the time in EST , howeversalesforce stores in GMT convert using timezone class and offset time zone  method.
+  and for outbound msg we convert back them to local timezone
+  
+  FSL Gantt Custom Icons:
+  Product vs Service
+  Weight
+  Crew Size
+  based upon above we are populating FSL__GanttIcon__c : Heavy Pickup
+  Two-Man Crew
+  Standard Pickup
+  Heavy Crew Job
+  
+  Q6. What Can I Do with LWCs in the Field Service Mobile App?
+  A6.You can create custom components that are accessed from the Actions menu. The Actions menu is available globally and on record detail pages.
+  FSL do not support LWCs inside of a flow, only the configuration of a LWC as quick action by itself.
+  
+  Q7. Set Up Permissions for Einstein for Field Service Mobile?
+  https://help.salesforce.com/s/articleView?id=service.fs_einstein_gen_ai_setup.htm&type=5
+  
+  Q8: FSL AI features:
+  1. pre work Brief: 
+  pre condition:
+  a.Enable Lightning Data Service for the Field Service mobile app.:
+          org wide: Enable Lightning Data Service for your entire org in Field Service Settings. From Setup, in the Quick Find box, 
+                  enter and select Field Service Settings. Under Lightning SDK for Field Service Mobile, select Enable Lightning SDK for Field Service Mobile.
+  b. Set up permissions for Einstein for Field Service features.
+  
+  Post work summary: 
+  
+  2. Agentforce: Add a conversational AI assistant to the Field Service app to boost productivity, reduce service times, and improve first-time fix rates.
+  
+  Q9: Document builder:
+  Document Builder is the Salesforce Field Service solution for creating richly formatted and branded PDF service documents for your business needs.
+  FSL settings--> enable document builder( can be replacement for Service template ) only one can be visible at a time
+  
+  PS to assign: Field service document builder dispatcher/ mobile/Standard
+  System Permissions.
+  Click Edit, and then select Document Builder and Lightning SDK for Field Service Mobile. Save your changes.
+  Click Create Service Document.
+  If you’ve entered a value in the service document’s template field, you land on the corresponding template. Otherwise, if you set a default, but no Service Document Template ID for the record or for the associated Work Type, the default template loads.
+  https://help.salesforce.com/s/articleView?id=service.fs_document_builder_translate.htm&type=5
+  
+   Service Report Language field.   will be there when enable translation workbench enable.
+  
+  Mobile development consideration:
+  GraphQL via the lightning/uiGraphQLApi wire adapter is the recommended standard for offline data access, replacing imperative Apex calls.
+  use GraphQL (GQL) or the Lightning Data Service wire adapter. See Use the Wire Service to Get Data. GQL updates data in the local cache, allowing LWCs to function offline. 
+  Remember, mobile connectivity isn’t always reliable, so GQL offers better performance in low-connectivity situations.
+  
+  Briefcase builder:
+  
+  With Briefcase Builder, you can create a briefcase and then select the records that you want to put in the briefcase. After the briefcase is set up, 
+  you can make it available to your users while they’re offline in the Field Service iOS and Android mobile apps.
+  
+  Note
+  Note To use Briefcase Builder and access its full functionality, install the iOS and Android Field Serv
+  5 Active briefcase , 1 can assigned, 50000 records can be primed per user (
+  A user can only be assigned one active briefcase at a time (assigned by Profile, Permission Set, or User).  
+  Briefcase rules support up to 3 levels of parent-to-child or child-to-parent relationships.
+  Create a briefcase by using Briefcase Builder in Setup.
+  you can use object rules and filters to select the most relevant records for your mobile workforce.
+  Selective Filters: Rules must use selective criteria (e.g., Service Appointments assigned to the running user for the next 7 days). Unfiltered queries risk hitting the record cap or timing out during the initial sync.
+  
+  
+  to define as a summary:
+  
+  Briefcase Builder defines what records are downloaded to the mobile device's encrypted SQLite store, 
+  while the GraphQL wire adapter (lightning/uiGraphQLApi) defines how the LWC reads and queries that cached data without relying on an active network connection.
+  We optimize this by keeping briefcase filters narrow—under 50,000 records—and using parameterized, static gql queries.
+  
+  Because queries are defined statically using the gql tag, Salesforce’s Mobile Offline runtime can statically analyze the exact fields, objects, and relationships requested.
+  
+  It pairs with Briefcase Builder to preload (prime) only the required data to the mobile device before the technician or rep goes offline.
+  
+  
+  How Book Appointment works along with usage of derivatives and how it can be used in different objects.
+  User triggers "Book Appointment"
+              │
+              ▼
+  Loads Service Appointment (SA) Context
+  (Duration, Earliest Start, Due Date, Territory, Skills, Work Type)
+              │
+              ▼
+  Evaluates Scheduling Policy & Work Rules
+  (Excludes resources without skills, outside operating hours, or breaching match rules)
+              │
+              ▼
+  Calculates Travel Times & Service Objectives
+  (Routes calculated; slots graded by travel minimization, preferred resource, etc.)
+              │
+              ▼
+  Applies "Appointment Booking" Operating Hours (Time Slots)
+  (Maps availability into customer-facing slots: e.g., 9:00 AM - 1:00 PM, 1:00 PM - 5:00 PM)
+              │
+              ▼
+  Returns Graded Slots & Reserves Resource Schedule
+  (Sets SchedStartTime, SchedEndTime, and assigns ServiceResource via AssignedResource)
+  
+  
+  By default, Book Appointment is standard on Work Orders, Work Order Line Items, and Service Appointments. However, enterprise workflows frequently require booking appointments directly from Opportunity, Case, Account, Lead, or Asset.
+  
+  There are two primary ways to implement this:
+  
+  Option A: Quick Action with Auto-Created Service Appointments (Declarative)
+  Salesforce provides the standard Book Appointment quick action, which looks for an underlying Service Appointment.
+  
+  Flow Automation: When an action or milestone occurs on a standard object (e.g., Case reaches In Progress, or Opportunity reaches Proposal/Quote):
+  
+  Create a Work Order linking to the Case/Opportunity.
+  
+  Auto-generate a Service Appointment with default EarliestStartTimeAllowed and DueDate derived from the Parent.
+  
+  Expose Action: Add the standard Book Appointment quick action to the Page Layout of the Parent object (via related list or Lightning Action referencing the child SA).
+  
+  Option B: Programmatic Integration via FSL Global APIs (Apex / LWC)
+  For custom objects, customer portals, or bespoke LWC flows, you can call the FSL Appointment Booking API directly from Apex without needing the standard UI modal.
+  
+  
+Appointment bundling:
+https://help.salesforce.com/s/articleView?id=service.fs_set_up_bundling.htm&type=5
 
-System.TimeZone tz =
-    System.TimeZone.getTimeZone(
-        zipCode.PS_Service_Territory__r.OperatingHours.TimeZone
-    );
+Appointment bundling is basic bundling of appointment of the same worktype on a particular location (Area) or bundling of appointmentof different worktype at same location 
+depends on bundling policy.Bundling policy idnetift that group of appointment can be done by a single resource on the single visit.
+It can be done manual and automatically.
 
-Timezone targetTimeZone =
-    TimeZone.getTimeZone(localTimeZone);
+Steps:
+Activate Bundling in FS setting.
+Activate permission--> Filed service bundle for dispatcher, field service integration.
 
-This ensured customers only saw valid appointment options."
+create Appointment bundle config object for a whole org.- general settings like status of sA to be bundled, or settings of unbundling
+create the scheduling bundling policy -- like group appointment for different wT or same WT -- can define n number of policies differ with territories to apply.
+if the appointment can be bundle by more than one policy then it will be bundle by one have the highest priorty
+check automatic bundling box , and you ca select maximum number of appointment that can be bundled together and the duration as well.
 
+five related list:
+1 restriction Policices: that contain specific value like street which have zipcodes
+2. Aggregration policies:
+3. sort policy
+4. Propogation policy
 
-Q4. How you do automatic scheduling through FSL engine?
-Ans4. FSL.ScheduleService.schedule()
+Suppose we have two partners(contractors), and In a service territory both partner works , so we need to think about the way that if it assign to Quue A ti will assign to partner a and 
+if Queue B , then partner B.
 
-Q5. Any oter customization doen in terms of FSL?
-A5. "I implemented bi-directional timezone conversion between external systems and Salesforce FSL. 
-Arrival windows were converted from local territory time to GMT for storage and converted back when displayed to dispatchers and technicians."
-
-API send the time in EST , howeversalesforce stores in GMT convert using timezone class and offset time zone  method.
-and for outbound msg we convert back them to local timezone
-
-FSL Gantt Custom Icons:
-Product vs Service
-Weight
-Crew Size
-based upon above we are populating FSL__GanttIcon__c : Heavy Pickup
-Two-Man Crew
-Standard Pickup
-Heavy Crew Job
-
-Q6. What Can I Do with LWCs in the Field Service Mobile App?
-A6.You can create custom components that are accessed from the Actions menu. The Actions menu is available globally and on record detail pages.
-FSL do not support LWCs inside of a flow, only the configuration of a LWC as quick action by itself.
-
-Q7. Set Up Permissions for Einstein for Field Service Mobile?
-https://help.salesforce.com/s/articleView?id=service.fs_einstein_gen_ai_setup.htm&type=5
-
-Q8: FSL AI features:
-1. pre work Brief: 
-pre condition:
-a.Enable Lightning Data Service for the Field Service mobile app.:
-        org wide: Enable Lightning Data Service for your entire org in Field Service Settings. From Setup, in the Quick Find box, 
-                enter and select Field Service Settings. Under Lightning SDK for Field Service Mobile, select Enable Lightning SDK for Field Service Mobile.
-b. Set up permissions for Einstein for Field Service features.
-
-Post work summary: 
-
-2. Agentforce: Add a conversational AI assistant to the Field Service app to boost productivity, reduce service times, and improve first-time fix rates.
-
-Q9: Document builder:
-Document Builder is the Salesforce Field Service solution for creating richly formatted and branded PDF service documents for your business needs.
-FSL settings--> enable document builder( can be replacement for Service template ) only one can be visible at a time
-
-PS to assign: Field service document builder dispatcher/ mobile/Standard
-System Permissions.
-Click Edit, and then select Document Builder and Lightning SDK for Field Service Mobile. Save your changes.
-Click Create Service Document.
-If you’ve entered a value in the service document’s template field, you land on the corresponding template. Otherwise, if you set a default, but no Service Document Template ID for the record or for the associated Work Type, the default template loads.
-https://help.salesforce.com/s/articleView?id=service.fs_document_builder_translate.htm&type=5
-
- Service Report Language field.   will be there when enable translation workbench enable.
-
-Mobile development consideration:
-GraphQL via the lightning/uiGraphQLApi wire adapter is the recommended standard for offline data access, replacing imperative Apex calls.
-use GraphQL (GQL) or the Lightning Data Service wire adapter. See Use the Wire Service to Get Data. GQL updates data in the local cache, allowing LWCs to function offline. 
-Remember, mobile connectivity isn’t always reliable, so GQL offers better performance in low-connectivity situations.
-
-Briefcase builder:
-
-With Briefcase Builder, you can create a briefcase and then select the records that you want to put in the briefcase. After the briefcase is set up, 
-you can make it available to your users while they’re offline in the Field Service iOS and Android mobile apps.
-
-Note
-Note To use Briefcase Builder and access its full functionality, install the iOS and Android Field Serv
-5 Active briefcase , 1 can assigned, 50000 records can be primed per user (
-A user can only be assigned one active briefcase at a time (assigned by Profile, Permission Set, or User).  
-Briefcase rules support up to 3 levels of parent-to-child or child-to-parent relationships.
-Create a briefcase by using Briefcase Builder in Setup.
-you can use object rules and filters to select the most relevant records for your mobile workforce.
-Selective Filters: Rules must use selective criteria (e.g., Service Appointments assigned to the running user for the next 7 days). Unfiltered queries risk hitting the record cap or timing out during the initial sync.
+Ans. 
 
 
-to define as a summary:
-
-Briefcase Builder defines what records are downloaded to the mobile device's encrypted SQLite store, 
-while the GraphQL wire adapter (lightning/uiGraphQLApi) defines how the LWC reads and queries that cached data without relying on an active network connection.
-We optimize this by keeping briefcase filters narrow—under 50,000 records—and using parameterized, static gql queries.
-
-Because queries are defined statically using the gql tag, Salesforce’s Mobile Offline runtime can statically analyze the exact fields, objects, and relationships requested.
-
-It pairs with Briefcase Builder to preload (prime) only the required data to the mobile device before the technician or rep goes offline.
 
 
-How Book Appointment works along with usage of derivatives and how it can be used in different objects.
-User triggers "Book Appointment"
-            │
-            ▼
-Loads Service Appointment (SA) Context
-(Duration, Earliest Start, Due Date, Territory, Skills, Work Type)
-            │
-            ▼
-Evaluates Scheduling Policy & Work Rules
-(Excludes resources without skills, outside operating hours, or breaching match rules)
-            │
-            ▼
-Calculates Travel Times & Service Objectives
-(Routes calculated; slots graded by travel minimization, preferred resource, etc.)
-            │
-            ▼
-Applies "Appointment Booking" Operating Hours (Time Slots)
-(Maps availability into customer-facing slots: e.g., 9:00 AM - 1:00 PM, 1:00 PM - 5:00 PM)
-            │
-            ▼
-Returns Graded Slots & Reserves Resource Schedule
-(Sets SchedStartTime, SchedEndTime, and assigns ServiceResource via AssignedResource)
 
 
-By default, Book Appointment is standard on Work Orders, Work Order Line Items, and Service Appointments. However, enterprise workflows frequently require booking appointments directly from Opportunity, Case, Account, Lead, or Asset.
-
-There are two primary ways to implement this:
-
-Option A: Quick Action with Auto-Created Service Appointments (Declarative)
-Salesforce provides the standard Book Appointment quick action, which looks for an underlying Service Appointment.
-
-Flow Automation: When an action or milestone occurs on a standard object (e.g., Case reaches In Progress, or Opportunity reaches Proposal/Quote):
-
-Create a Work Order linking to the Case/Opportunity.
-
-Auto-generate a Service Appointment with default EarliestStartTimeAllowed and DueDate derived from the Parent.
-
-Expose Action: Add the standard Book Appointment quick action to the Page Layout of the Parent object (via related list or Lightning Action referencing the child SA).
-
-Option B: Programmatic Integration via FSL Global APIs (Apex / LWC)
-For custom objects, customer portals, or bespoke LWC flows, you can call the FSL Appointment Booking API directly from Apex without needing the standard UI modal.
 
 
-Service Appointment Bundling:
 
+
+  
+  
+  
+  
