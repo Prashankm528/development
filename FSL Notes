@@ -399,7 +399,41 @@ five related list:
 Suppose we have two partners(contractors), and In a service territory both partner works , so we need to think about the way that if it assign to Quue A ti will assign to partner a and 
 if Queue B , then partner B.
 
-Ans. 
+Ans. Option 1: Relevance Groups with Match Rules (Recommended)
+This is the cleanest approach because it keeps your physical territory structure intact while using metadata to steer the FSL scheduling engine.
+
+Tag the Service Resources:
+
+Add a custom picklist or text field on ServiceResource called Partner_Affiliation__c (Values: Partner A, Partner B).
+
+Tag all technicians belonging to Contractor A as Partner A, and Contractor B as Partner B.
+
+Mirror the Queue on the Service Appointment:
+
+Create a field on ServiceAppointment called Assigned_Partner__c.
+
+When a Work Order or Service Appointment is assigned to Queue A, a simple Record-Triggered Flow populates Assigned_Partner__c = 'Partner A'.
+
+When assigned to Queue B, it populates Assigned_Partner__c = 'Partner B'.
+
+Configure a Match Fields Work Rule:
+
+Create an FSL Match Fields Work Rule:
+
+Service Appointment Field: Assigned_Partner__c
+
+Service Resource Field: Partner_Affiliation__c
+
+Add this rule to your active Scheduling Policy.
+
+Result:
+
+When the dispatcher or auto-scheduling engine runs for a Service Appointment from Queue A, the engine filters out all of Partner B's resources and only considers Partner A's technicians, even though they share the exact same geographic boundary.
+
+
+how you will attach the small video from FSL mobile app? -- using chatter feed.How you configure VRA? Download manage packahe and hive remote expert permission
+
+how you implemented vra  - downoald managed packed, getting neccesary licence , setiing inVRA app, record page -- putting vRA component , assigning neccesary prmission sets Remote Expert perm
 
 
 
