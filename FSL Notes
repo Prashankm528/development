@@ -25,7 +25,70 @@ Limits of FSL:
 
 Ques: How to handle filling Blanks on the Gantt in case of early finish or job cancellations.
 Ans: Use In day Optimization: run it manually or schedule it for every hour or every day
+SLiding service Appointment
+Resource scheduling and optimization(RSO)
+fill GAp's in SR schedule with AGentforce
+user permission needed: use agentforce default agent, Access Agent topicsand Action for field service
+work for a single day , if not provided in single date it willt ake for today.
+open agentforce : give phrase: Fill the gaps in Emma White's schedule on
+Drip feed
+
+
+before ESO:
+Fill In schedule
+Scheduling policies  
+
+
+difference between scheduling optimization and ESO:
+
+"Point-to-point predictive routing... if your region has the required map coverage level"
+How it works:
+
+Legacy Engine: Frequently relied on straight-line ("as the crow flies") aerial distance multiplied by an average speed, or
+generic street-level routing without dynamic conditions.
+
+ESO Engine: Uses Point-to-Point Predictive Routing. It maps the actual turn-by-turn road network and integrates historical, 
+time-of-day traffic patterns (e.g., driving 10 miles at 8:30 AM takes 35 minutes, but the same route at 1:00 PM takes 15 minutes).
      
+
+for using sliding and sliding reshuffle -- you need to invoke the Inday or RSO, schedule propgarmatically for thatd ay
+SA field "Schedule Over Lower Priority Appointment" should be set to true on high prio SA, otherwise lower prio SA do not slide. 
+
+
+ESO(Enhance scheduling and optimization): Summer 23:
+enhanced architecture and services are more efficient and improve scalability, performance, and schedule quality. 
+From Setup, in the Quick Find box, enter Field Service, and then select Field Service Settings.
+To use the enhanced features, select Field Service Enhanced Scheduling and Optimization and then save your changes
+
+Point-to-Point Predictive Routing( take care of tolls and traffic)
+sliding and sliding/ reshuffle Appointment
+Travel Mode: travel mode is assigned to that territory or territory member
+Avoiding Apex CPU timeouts:Enable Enhanced Scheduling and Optimization at least for the territories that get the Apex CPU timeout exception. 
+Enhanced Scheduling and Optimization calculates the time slots in a service outside the Salesforce org where no CPU timeout limits apply.Reduce the horizon of the Appointment Booking and Get Candidates operations
+operating hour holiday
+
+How to craete a good scheduling policy:
+Filter out as many candidates as possible using more Database work rules in your scheduling policy.
+Database rules are applied at the SOQL query clause level. These rules immediately disqualify resources and query only the resources that you need, 
+so performance isn’t impacted. The database work rule types include:
+Match Territory
+Working Territories
+Maximum Travel from Home
+Extended Match
+
+other work rule:
+Match boolean
+Match fields(partner based routing)
+Match skills
+
+
+How optimization conflicts manage in FSL:
+dispatcher activates resource schedule optimization for a resource that’s part of a dataset being optimized through in-day optimization. 
+If an overlap is detected, a message is shown and the newly initiated optimization request is aborted. Similarly, when a dispatcher tries to make changes to the Gantt,
+which is being processed by a background optimization request such as in-day optimization, a message is shown notifying the dispatcher that their changes can 
+create unwanted results.
+
+
 
 Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
 Ans1 .  use getAppointmentInsight class method.
@@ -37,6 +100,12 @@ Ans1 .  use getAppointmentInsight class method.
         myresult = FSL.ScheduleService.getAppointmentInsights(Service Appointment ID,Scheduling Policy ID);
         
         System.debug(myresult);
+
+or use optimization insights(not supportred for RSO)
+There are four optimization insights components: summary (1), metrics (2), key performance indicators (3), and health check (4
+
+Optimization Profile has access to the OAASRestInsights and OAASRestHealthCheck Apex classes.
+
 
 Ques2. How you fetch slots programitaclly?
 Ans2. Call FSL AppointmentBookingService.GetSlots()
