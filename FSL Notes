@@ -22,6 +22,11 @@ Limits of FSL:
 
 1.
 
+
+Ques: How to handle filling Blanks on the Gantt in case of early finish or job cancellations.
+Ans: Use In day Optimization: run it manually or schedule it for every hour or every day
+     
+
 Ques1. How you will debug t why a service appointment can’t be scheduled on the Gantt, including blocking rules, blocked slots, and resource availability?
 Ans1 .  use getAppointmentInsight class method.
         // FSL.ScheduleService class
