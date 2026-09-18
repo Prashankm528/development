@@ -37,6 +37,7 @@ Drip feed
 before ESO:
 Fill In schedule
 Scheduling policies  
+Group Nearby Appointments
 
 
 difference between scheduling optimization and ESO:
@@ -61,11 +62,18 @@ From Setup, in the Quick Find box, enter Field Service, and then select Field Se
 To use the enhanced features, select Field Service Enhanced Scheduling and Optimization and then save your changes
 
 Point-to-Point Predictive Routing( take care of tolls and traffic)
-sliding and sliding/ reshuffle Appointment
+sliding and sliding/ reshuffle Appointment:
+Select Sliding only to enable service appointments to move between time slots for the same resource within the same shift.
+nable service appointments to move between time slots on any day or to another resource.
 Travel Mode: travel mode is assigned to that territory or territory member
 Avoiding Apex CPU timeouts:Enable Enhanced Scheduling and Optimization at least for the territories that get the Apex CPU timeout exception. 
 Enhanced Scheduling and Optimization calculates the time slots in a service outside the Salesforce org where no CPU timeout limits apply.Reduce the horizon of the Appointment Booking and Get Candidates operations
-operating hour holiday
+operating hour holiday: Holiday Management
+Flexible Breaks: Add multiple breaks to availability-based work rules. Flexible break times are calculated at the start of each work day.
+Minimize Gaps Objective: Ensure mobile workers maximize their presence in high-volume areas by completing all appointments within a specific area before moving to the next.
+Use the Group Nearby Appointments objective to prefer reducing the number of service resources working at nearby appointments on a given day. 
+Offsite Appointments: Indicates whether an appointment can be done remotely, with no travel time added to the schedule.
+Optimization Request Owner
 
 How to craete a good scheduling policy:
 Filter out as many candidates as possible using more Database work rules in your scheduling policy.
@@ -87,6 +95,27 @@ dispatcher activates resource schedule optimization for a resource that’s part
 If an overlap is detected, a message is shown and the newly initiated optimization request is aborted. Similarly, when a dispatcher tries to make changes to the Gantt,
 which is being processed by a background optimization request such as in-day optimization, a message is shown notifying the dispatcher that their changes can 
 create unwanted results.
+
+
+Agentforce for dispatchers:
+From the App Launcher, enter Agent, and then select the Agentforce Studio app.
+On the Agents tab, click New Agent.
+Select the Field Service Dispatching agent template.
+Enter the agent’s name and then click Let’s Go.
+Review your agent in Agentforce Builder.
+In the Settings section, define the settings that determine how your agent behaves in conversations, such as system messages and language settings.
+In the Subagents section, manage and customize your agent’s subagents and actions.
+In the Data section, select a data library. The Answer Questions with Knowledge action grounds your agent’s responses with it.
+
+Permission needed:
+Einstein Field Service User  permission set.
+Edit the Enabled Agent Access settings.
+Select the Agentforce Employee agents that you want to give users access to and then click Save.
+
+Agentforce for Mobile workers:
+Einstein Field Service User: Assign this permission set to all Field Service Einstein users, including admin and mobile users.
+Prompt Template Manager: Assign this permission set to users who create and manage prompt templates in Prompt Builder.
+Prompt Template User
 
 
 
@@ -244,6 +273,8 @@ a.Enable Lightning Data Service for the Field Service mobile app.:
                 enter and select Field Service Settings. Under Lightning SDK for Field Service Mobile, select Enable Lightning SDK for Field Service Mobile.
 b. Set up permissions for Einstein for Field Service features.
 
+Post work summary: 
+
 2. Agentforce: Add a conversational AI assistant to the Field Service app to boost productivity, reduce service times, and improve first-time fix rates.
 
 Q9: Document builder:
@@ -260,15 +291,78 @@ https://help.salesforce.com/s/articleView?id=service.fs_document_builder_transla
  Service Report Language field.   will be there when enable translation workbench enable.
 
 Mobile development consideration:
+GraphQL via the lightning/uiGraphQLApi wire adapter is the recommended standard for offline data access, replacing imperative Apex calls.
 use GraphQL (GQL) or the Lightning Data Service wire adapter. See Use the Wire Service to Get Data. GQL updates data in the local cache, allowing LWCs to function offline. 
 Remember, mobile connectivity isn’t always reliable, so GQL offers better performance in low-connectivity situations.
 
 Briefcase builder:
 
-With Briefcase Builder, you can create a briefcase and then select the records that you want to put in the briefcase. After the briefcase is set up, you can make it available to your users while they’re offline in the Field Service iOS and Android mobile apps.
+With Briefcase Builder, you can create a briefcase and then select the records that you want to put in the briefcase. After the briefcase is set up, 
+you can make it available to your users while they’re offline in the Field Service iOS and Android mobile apps.
 
 Note
 Note To use Briefcase Builder and access its full functionality, install the iOS and Android Field Serv
-5 briefcase , 50000 records can be primed per user (
+5 Active briefcase , 1 can assigned, 50000 records can be primed per user (
+A user can only be assigned one active briefcase at a time (assigned by Profile, Permission Set, or User).  
+Briefcase rules support up to 3 levels of parent-to-child or child-to-parent relationships.
 Create a briefcase by using Briefcase Builder in Setup.
 you can use object rules and filters to select the most relevant records for your mobile workforce.
+Selective Filters: Rules must use selective criteria (e.g., Service Appointments assigned to the running user for the next 7 days). Unfiltered queries risk hitting the record cap or timing out during the initial sync.
+
+
+to define as a summary:
+
+Briefcase Builder defines what records are downloaded to the mobile device's encrypted SQLite store, 
+while the GraphQL wire adapter (lightning/uiGraphQLApi) defines how the LWC reads and queries that cached data without relying on an active network connection.
+We optimize this by keeping briefcase filters narrow—under 50,000 records—and using parameterized, static gql queries.
+
+Because queries are defined statically using the gql tag, Salesforce’s Mobile Offline runtime can statically analyze the exact fields, objects, and relationships requested.
+
+It pairs with Briefcase Builder to preload (prime) only the required data to the mobile device before the technician or rep goes offline.
+
+
+How Book Appointment works along with usage of derivatives and how it can be used in different objects.
+User triggers "Book Appointment"
+            │
+            ▼
+Loads Service Appointment (SA) Context
+(Duration, Earliest Start, Due Date, Territory, Skills, Work Type)
+            │
+            ▼
+Evaluates Scheduling Policy & Work Rules
+(Excludes resources without skills, outside operating hours, or breaching match rules)
+            │
+            ▼
+Calculates Travel Times & Service Objectives
+(Routes calculated; slots graded by travel minimization, preferred resource, etc.)
+            │
+            ▼
+Applies "Appointment Booking" Operating Hours (Time Slots)
+(Maps availability into customer-facing slots: e.g., 9:00 AM - 1:00 PM, 1:00 PM - 5:00 PM)
+            │
+            ▼
+Returns Graded Slots & Reserves Resource Schedule
+(Sets SchedStartTime, SchedEndTime, and assigns ServiceResource via AssignedResource)
+
+
+By default, Book Appointment is standard on Work Orders, Work Order Line Items, and Service Appointments. However, enterprise workflows frequently require booking appointments directly from Opportunity, Case, Account, Lead, or Asset.
+
+There are two primary ways to implement this:
+
+Option A: Quick Action with Auto-Created Service Appointments (Declarative)
+Salesforce provides the standard Book Appointment quick action, which looks for an underlying Service Appointment.
+
+Flow Automation: When an action or milestone occurs on a standard object (e.g., Case reaches In Progress, or Opportunity reaches Proposal/Quote):
+
+Create a Work Order linking to the Case/Opportunity.
+
+Auto-generate a Service Appointment with default EarliestStartTimeAllowed and DueDate derived from the Parent.
+
+Expose Action: Add the standard Book Appointment quick action to the Page Layout of the Parent object (via related list or Lightning Action referencing the child SA).
+
+Option B: Programmatic Integration via FSL Global APIs (Apex / LWC)
+For custom objects, customer portals, or bespoke LWC flows, you can call the FSL Appointment Booking API directly from Apex without needing the standard UI modal.
+
+
+Service Appointment Bundling:
+
