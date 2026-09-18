@@ -251,7 +251,18 @@ Managing Apex Runtime Limits During Large Runs
 1. Disable / Bypass Unnecessary Automation:During large data updates or batches, disable non-essential triggers, flows, and duplicate rules using a configuration bypass pattern
 2. Heap Management in Batches:Avoid storing class-level collections that accumulate across batch iterations. Use Database.Stateful strictly for tracking aggregates/counters.
 
-Ques23: 
+Ques23: Custom meta data Vs custom object
+Ans 23: Custom Objects records only take 2kb of space, no matter how much content there is. However, custom metadata size is decided on basis of field size 
+& not actual records. So, if you have a text field of size 255 characters and storing only 10 characters, Salesforce would still count it as 255 characters.
+Custom metadata does not support encryption. If you are in the healthcare industry and security, compliance is paramount, you might need to go with Custom Objects.
+Custom metadata does support parent-child relationships but to other custom metadata only. Therefore, if we need to refer to any existing standard or custom object, then we have to choose a custom object.
+If data needs to be maintained by business users who would not have access to Setup & Configurations then use Custom Object.
+
+Ques24: custom metadata vs custom settings:
+An24 Salesforce does not allow to create list custom setting only heriarchy
+https://www.apexhours.com/difference-between-custom-setting-and-custom-metadata-salesforce/
+
+Ques25: 
 
 
 
