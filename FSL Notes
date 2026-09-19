@@ -435,6 +435,25 @@ how you will attach the small video from FSL mobile app? -- using chatter feed.H
 
 how you implemented vra  - downoald managed packed, getting neccesary licence , setiing inVRA app, record page -- putting vRA component , assigning neccesary prmission sets Remote Expert perm
 
+Salesforce interview Question:
+
+Q1. In A Banking system,You got a customer having a pan card , you need to call out to 5 system which contain the other information related and capture the response.
+then you will calculate the CIBIL score.
+Q2. What if one of the integration will fail , how you will debug the same  and how your retry mechanism will work?
+Q3 from a community a case got created in salesforce get assigned to Queue. when a work order get created from the case it gat assigned to 
+the technican belonging to it respective Queue?
+Q4 Suppose there are three technician/partner persona T1, T2, T3 and then there are four work type if work type  1 should get assended to t1, worktype 2
+can get assigned to t1, t2, t3 howver it should get assigned to t3 , t1  and then t2 i.e the least skill person will should assign first.(priorty fied on service appointment)
+so that high skill person can work onother priorty task?
+Q5.Suppose in health client you are engage in program which required service everymonth , how you will generate the WO automatically for this?
+Q6. Your technician will work in rural areas, where there will less connectivity , how will you handle the offline work in FSL mobile app?
+Q7. How the sharing setiing works in FSL. A workorder need to see to dispatcher as well as the manager ,how the visiblity wil work?
+Q8. how you will display the work order and status  of service appointment to the portal customer who have raised the case for the issue after the 
+work order completion?
+Q9.Manager , dispatcher , technician will need to see the same field with different access level?
+Q10. there are 10 asset  and based upon the asset , you need to see the different forms to fill to record the information?
+
+
 
 
 
