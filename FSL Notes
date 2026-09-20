@@ -533,6 +533,24 @@ Salesforce acts purely as the System of Engagement (UI) and Data Store; the midd
 Network Efficiency: Total transaction turnaround drops from the sum of all response times to the single slowest response time.  
 Fault Isolation: The middleware implements the Circuit Breaker Pattern—if the government KYC portal is down, it fails gracefully without consuming Salesforce Apex CPU or exhausting callout limits.
 
+[Banker clicks "Verify" in LWC]
+              │
+              ▼
+    [Enqueues Queueable Apex]
+              │
+              ├──▶ 1. Callout: Core Banking (Accounts/Balances)
+              ├──▶ 2. Callout: KYC / Government Database (Identity)
+              ├──▶ 3. Callout: Loan Management System (Active Facilities)
+              ├──▶ 4. Callout: Fraud / Blacklist Check
+              └──▶ 5. Callout: Tax / Income Verification
+              │
+              ▼
+   [DML: Save to Customer_Verification__c & publish Platform Event]
+              │
+              ▼
+   [LWC empApi updates screen automatically]
+
+
 
 
 
