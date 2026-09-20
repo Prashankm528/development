@@ -262,7 +262,144 @@ Ques24: custom metadata vs custom settings:
 An24 Salesforce does not allow to create list custom setting only heriarchy
 https://www.apexhours.com/difference-between-custom-setting-and-custom-metadata-salesforce/
 
-Ques25: 
+Ques25: In A Banking system,You got a customer having a pan card , you need to call out to 5 system which contain the other information related and capture the response.
+then you will calculate the CIBIL score.
+
+In an enterprise banking architecture on Salesforce, making 5 sequential synchronous HTTP callouts followed by a 6th callout to a credit bureau (CIBIL) directly from a user
+action or trigger is an anti-pattern. Doing so would risk hitting:Concurrent Long-Running Apex Limits: If multiple requests take $>5\text{ seconds}$,
+Salesforce blocks subsequent threads.Cumulative Callout Timeout Limits: Salesforce caps total synchronous HTTP request time at 120 seconds per transaction.Brittle Execution: If system 3 fails or times out, the entire synchronous UI or thread blocks.
+
+Ans Can Happen In two ways:
+
+1. Mulesoft:
+2. Salesforce rest callout
+
+Mulesoft:
+
+[Salesforce]                                        [Middleware (MuleSoft)]                                 [External Systems]
+     │                                                         │                                                     │
+     │─── 1. Outbound Callout (PAN, CustomerId) ──────────────▶│                                                     │
+     │    (Returns 202 Accepted immediately)                   │                                                     │
+     │                                                         │─── 2. Scatter-Gather (Parallel HTTP Callouts) ─────▶│
+     │                                                         │    ├─ Core Banking System                           │
+     │                                                         │    ├─ KYC / Government DB                           │
+     │                                                         │    ├─ Loan Management System (LMS)                  │
+     │                                                         │    ├─ Fraud / Blacklist Service                     │
+     │                                                         │    └─ Tax / Income Portal                           │
+     │                                                         │                                                     │
+     │                                                         │◀── 3. Receives responses & aggregates payloads ─────│
+     │                                                         │                                                     │
+     │◀── 4. Inbound Callback (Composite API / Platform Event)─│                                                     │
+     │                                                         │                                                     │
+     ▼                                                         ▼                                                     ▼
+ [Updates Customer_Verification__c & notifies UI]
+
+The banker enters the PAN card on the UI. The Apex controller makes a single, lightweight callout to the Middleware's Process API.
 
 
+Middleware Orchestration: The Scatter-Gather Flow
+Inside the middleware (e.g., MuleSoft flow):
+Listener: Receives the POST payload from Salesforce and returns an immediate 202 Accepted to free up the Salesforce HTTP thread.
 
+Scatter-Gather Component: Splices the execution context into 5 concurrent threads, executing the downstream system calls in parallel:
+Route 1: Core Banking API (System API)
+Route 2: KYC Verification API (System API)
+Route 3: Loan Management API (System API)
+Route 4: Fraud / Watchlist API (System API)
+Route 5: Tax / Income API (System API)
+
+Data Aggregation: The Scatter-Gather router waits for all 5 parallel threads to return (with a configurable timeout, e.g., 5 seconds per route). 
+If one system fails (e.g., Tax API times out), the router catches the route exception, flags that block as Unavailable, and continues aggregating the remaining 4 valid responses.
+
+Data Harmonization: The middleware transforms the merged response into a standardized JSON matching Salesforce's data contract.
+
+4. Middleware Inbound: Updating Salesforce
+  Once the payload is consolidated, the middleware pushes the data back into Salesforce using one of two methods:
+  1. using Composite AI
+  MuleSoft calls the standard Salesforce Composite Graph API or an Apex REST endpoint:
+    PATCH /services/data/v61.0/sobjects/Customer_Verification__c/{verificationId}
+Content-Type: application/json
+
+  {
+    "Status__c": "Completed",
+    "Core_Banking_Summary__c": "{ ... }",
+    "KYC_Verified__c": true,
+    "Active_Loans_Count__c": 2,
+    "Fraud_Risk_Level__c": "Low",
+    "Tax_Income_Verified__c": true
+  }
+
+2. Platform event:
+The middleware publishes a high-volume Platform Event (Customer_Verification_Result__e).
+An after insert trigger on the Platform Event runs in an independent system context, writes the data to Customer_Verification__c, and logs any system degradation.
+The banker's LWC screen listens directly via lightning/empApi and updates automatically the moment the event hits the event bus.
+
+Separation of Concerns: 
+Salesforce acts purely as the System of Engagement (UI) and Data Store; the middleware handles protocol transformation, retry queues, and rate-limiting.
+Network Efficiency: Total transaction turnaround drops from the sum of all response times to the single slowest response time.  
+Fault Isolation: The middleware implements the Circuit Breaker Pattern—if the government KYC portal is down, it fails gracefully without consuming Salesforce Apex CPU or exhausting callout limits.
+
+
+Event-Driven Queueable with Real-Time UI Streaming:
+[Banker clicks "Verify" in LWC]
+              │
+              ▼
+    [Enqueues Queueable Apex]
+              │
+              ├──▶ 1. Callout: Core Banking (Accounts/Balances)
+              ├──▶ 2. Callout: KYC / Government Database (Identity)
+              ├──▶ 3. Callout: Loan Management System (Active Facilities)
+              ├──▶ 4. Callout: Fraud / Blacklist Check
+              └──▶ 5. Callout: Tax / Income Verification
+              │
+              ▼
+   [DML: Save to Customer_Verification__c & publish Platform Event]
+              │
+              ▼
+   [LWC empApi updates screen automatically]
+
+A Queuable class with database allow callouts that hwill make my callouts  and create integration log for any failure, and publsih an to notify the UI when the response get received.
+This QUeuable class will fet called from Auraenabled method call from LWC e=with neccesaary parameters to send.
+
+. Latency & Limit ComparisonMetric
+                                    Direct Salesforce Callouts                          (Sequential)Middleware (Scatter-Gather Parallel)
+Total Response Time$      \sum(t_1 + t_2 + t_3 + t_4 + t_5)                                 max(t_1, t_2, t_3, t_4, t_5) 
+Salesforce Callouts       5 outgoing calls per customer1                                    single outgoing call (or 0 if event-driven)
+Error Handling              Heavy Apex try/catch + manual logging                        Built-in circuit breakers, dead-letter queues, & retriesPoint-to-Point 
+Coupling                 High (Salesforce knows 5 distinct auth/schemas)                  Zero (Salesforce only knows the middleware API contract)
+
+Ques26:  so you are on client call , client disccus the requirement and and need the solution in some way , however you know it will create certain challenges in future, so
+how you will convience the client on the same , client is not the technical person?
+An26: When handling a non-technical client who is set on a specific implementation path, the key is to never frame the discussion around code or technical jargon. If you tell them "This will hit Apex CPU governor limits or create database locks," they won't grasp the impact and may think you are just resisting extra work.
+Instead, frame the conversation around Business Impact, User Experience (UX), and Cost/Risk.
+Here is the 4-step framework to handle this conversation effectively:
+
+Step 1: Validate Their Intent First (Build Trust)
+Never start by saying "No" or "That's a bad design." Acknowledge the business outcome they are trying to achieve.
+What to say:
+"I completely understand why you want this feature to work this way. Your primary goal is to make sure the operations team gets their customer data instantly without manual steps, and that makes complete business sense."
+
+Step 2: Use Real-World Analogies (Translate the Risk)
+Avoid technical terms. Translate the future technical debt into tangible business risks: Speed, System Downtime, or Operational Disruption.
+If the issue is synchronous callouts/processing:
+"Think of your current request like asking one person to run to five different stores across town while a customer waits on hold on the phone. Today, with 10 customers, that person might manage. But when you scale to 500 customers next quarter, the line will stall, screens will freeze, and your reps will see loading wheels or errors during live calls."
+If the issue is excessive customization instead of standard configuration:
+"Building this as a fully custom piece today is like buying a custom-built car part rather than a standard manufacturer part. It works today, but every time Salesforce releases an update or your team wants a small tweak, it will require a developer to fix it, which slows down future requests and increases maintenance costs."
+
+Step 3: Present Options, Not Just an Objection
+A senior architect never leaves the client with an open problem. Always present two clear, business-driven alternatives:
+Option A (Their Requested Way):
+
+What it costs: Fast to deliver today, but high risk of system slowdowns, rep frustration during peak hours, and higher rework costs in 6 months.
+
+Option B (The Recommended Architectural Pattern):
+
+What it delivers: Provides the exact same business outcome, but runs reliably in the background, keeps user screens fast, and easily scales as transaction volume triples.
+
+Step 4: Validate with a Quick POC (Proof of Concept)
+Non-technical stakeholders believe what they can see. Offer a quick demonstration rather than a theoretical debate.
+
+What to say:
+"As an architect in a client-facing role, I translate technical constraints into business realities. Non-technical clients care about three things: 
+user adoption, system reliability, and cost. When a requested design will cause future bottlenecks, I first validate their business objective, use a practical operational analogy 
+to explain the risk—like system freezing during peak hours—and then present a scalable alternative that achieves the exact same business result. If there's still hesitation, I build a quick POC to show them the real-time user experience, which almost always secures their buy-in."
