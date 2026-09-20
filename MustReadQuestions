@@ -368,6 +368,32 @@ Salesforce Callouts       5 outgoing calls per customer1                        
 Error Handling              Heavy Apex try/catch + manual logging                        Built-in circuit breakers, dead-letter queues, & retriesPoint-to-Point 
 Coupling                 High (Salesforce knows 5 distinct auth/schemas)                  Zero (Salesforce only knows the middleware API contract)
 
+
+Ques 26: what happen if any of the system fails and how you will log the error and how you will retry?
+Ans26: In an enterprise integration architecture, failure in one downstream system must never take down the entire verification flow or leave the customer's state ambiguous.
+To support both developer debugging and operational support, logging happens across both Middleware and Salesforce.
+
+[System Failure in Route 3 (LMS)]
+              │
+              ▼
+   [Middleware CloudHub / Splunk]
+   (Captures: Raw HTTP Payload, Stack Trace, Correlation ID)
+              │
+              ▼
+    [Salesforce Inbound Sync]
+   (Creates structured `Integration_Log__c` record linked to `Customer_Verification__c`)
+
+Level 1: In-Flight Retry with Exponential Backoff (Middleware)
+Configured directly on the HTTP Request inside the individual Scatter-Gather route:Max Attempts: 3Frequency: 1000 ms initial delay
+Conditions: Retry only on transient errors (HTTP:TIMEOUT, HTTP:503, HTTP:504, HTTP:429). Never retry 400 Bad Request or 404 Not Found.Level 
+
+2: Asynchronous Dead-Letter Queue (DLQ)If all 3 in-flight attempts fail:The Scatter-Gather block catches the route error (ON_ERROR_CONTINUE), keeping the remaining 4 parallel threads alive.
+The failed system payload (with the customer PAN and Correlation ID) is written to a Dead-Letter Queue (DLQ) (e.g., Anypoint MQ, RabbitMQ, or AWS SQS).
+A DLQ subscriber re-attempts the callout after a cooldown period (e.g., 5 minutes).
+
+Level 3: Idempotent Selective Retry from Salesforce (User / Scheduled)Once the partial results land in Salesforce:The record 
+is set to:Status__c = 'Partially_Completed'Failed_Systems__c = 'Tax_Portal, LMS'On the UI, the banker sees green checkmarks on the 3 successful systems and amber warning icons on the 2 failed systems.The LWC provides a "Retry Failed Checks" button.Clicking this sends an outbound request containing:JSON
+   
 Ques26:  so you are on client call , client disccus the requirement and and need the solution in some way , however you know it will create certain challenges in future, so
 how you will convience the client on the same , client is not the technical person?
 An26: When handling a non-technical client who is set on a specific implementation path, the key is to never frame the discussion around code or technical jargon. If you tell them "This will hit Apex CPU governor limits or create database locks," they won't grasp the impact and may think you are just resisting extra work.
