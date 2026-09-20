@@ -456,7 +456,82 @@ Q11. so you ho on client call , client disccu sthe requirement and and need the 
 how you will convience the client on the same , client is not the technical person.
 q12. do you discuss tyhe requiremnt with your team member and brainstorm ?
 
+Ques1. In A Banking system,You got a customer having a pan card , you need to call out to 5 system which contain the other information related and capture the response.
+then you will calculate the CIBIL score.
 
+In an enterprise banking architecture on Salesforce, making 5 sequential synchronous HTTP callouts followed by a 6th callout to a credit bureau (CIBIL) directly from a user
+action or trigger is an anti-pattern. Doing so would risk hitting:Concurrent Long-Running Apex Limits: If multiple requests take $>5\text{ seconds}$,
+Salesforce blocks subsequent threads.Cumulative Callout Timeout Limits: Salesforce caps total synchronous HTTP request time at 120 seconds per transaction.Brittle Execution: If system 3 fails or times out, the entire synchronous UI or thread blocks.
+
+Ans Can Happen In two ways:
+
+1. Mulesoft:
+2. Salesforce rest callout
+
+Mulesoft:
+
+[Salesforce]                                        [Middleware (MuleSoft)]                                 [External Systems]
+     │                                                         │                                                     │
+     │─── 1. Outbound Callout (PAN, CustomerId) ──────────────▶│                                                     │
+     │    (Returns 202 Accepted immediately)                   │                                                     │
+     │                                                         │─── 2. Scatter-Gather (Parallel HTTP Callouts) ─────▶│
+     │                                                         │    ├─ Core Banking System                           │
+     │                                                         │    ├─ KYC / Government DB                           │
+     │                                                         │    ├─ Loan Management System (LMS)                  │
+     │                                                         │    ├─ Fraud / Blacklist Service                     │
+     │                                                         │    └─ Tax / Income Portal                           │
+     │                                                         │                                                     │
+     │                                                         │◀── 3. Receives responses & aggregates payloads ─────│
+     │                                                         │                                                     │
+     │◀── 4. Inbound Callback (Composite API / Platform Event)─│                                                     │
+     │                                                         │                                                     │
+     ▼                                                         ▼                                                     ▼
+ [Updates Customer_Verification__c & notifies UI]
+
+The banker enters the PAN card on the UI. The Apex controller makes a single, lightweight callout to the Middleware's Process API.
+
+
+Middleware Orchestration: The Scatter-Gather Flow
+Inside the middleware (e.g., MuleSoft flow):
+Listener: Receives the POST payload from Salesforce and returns an immediate 202 Accepted to free up the Salesforce HTTP thread.
+
+Scatter-Gather Component: Splices the execution context into 5 concurrent threads, executing the downstream system calls in parallel:
+Route 1: Core Banking API (System API)
+Route 2: KYC Verification API (System API)
+Route 3: Loan Management API (System API)
+Route 4: Fraud / Watchlist API (System API)
+Route 5: Tax / Income API (System API)
+
+Data Aggregation: The Scatter-Gather router waits for all 5 parallel threads to return (with a configurable timeout, e.g., 5 seconds per route). 
+If one system fails (e.g., Tax API times out), the router catches the route exception, flags that block as Unavailable, and continues aggregating the remaining 4 valid responses.
+
+Data Harmonization: The middleware transforms the merged response into a standardized JSON matching Salesforce's data contract.
+
+4. Middleware Inbound: Updating Salesforce
+  Once the payload is consolidated, the middleware pushes the data back into Salesforce using one of two methods:
+  1. using Composite AI
+  MuleSoft calls the standard Salesforce Composite Graph API or an Apex REST endpoint:
+    PATCH /services/data/v61.0/sobjects/Customer_Verification__c/{verificationId}
+Content-Type: application/json
+
+  {
+    "Status__c": "Completed",
+    "Core_Banking_Summary__c": "{ ... }",
+    "KYC_Verified__c": true,
+    "Active_Loans_Count__c": 2,
+    "Fraud_Risk_Level__c": "Low",
+    "Tax_Income_Verified__c": true
+  }
+
+2. Platform event:
+The middleware publishes a high-volume Platform Event (Customer_Verification_Result__e).
+An after insert trigger on the Platform Event runs in an independent system context, writes the data to Customer_Verification__c, and logs any system degradation.
+The banker's LWC screen listens directly via lightning/empApi and updates automatically the moment the event hits the event bus.
+
+Separation of Concerns: 
+Salesforce acts purely as the System of Engagement (UI) and Data Store; the middleware handles protocol transformation, retry queues, and rate-limiting.
+Network Efficiency: Total transaction turnaround drops from the sum of all response times to the single slowest response time.  
+Fault Isolation: The middleware implements the Circuit Breaker Pattern—if the government KYC portal is down, it fails gracefully without consuming Salesforce Apex CPU or exhausting callout limits.
 
 
 
