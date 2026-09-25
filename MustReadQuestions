@@ -533,3 +533,37 @@ Data Source Supported	           Only direct SOQL queries on sObjects	          
 Data Types Handled	        Standard & Custom Salesforce sObjects only	            sObjects, Primitive types (String, Integer), or Custom Apex Wrapper classes
 Custom Filter Logic	   Limited to standard SOQL WHERE clause capabilities	            Can run complex Apex logic to filter/transform items before passing to execute()
 Heap Size Risk	      Low (server-side cursor streams records chunk-by-chunk)	         Higher (loading full collections into memory can breach heap limits)
+
+
+Ques 30: error handling in LWC
+Ans 30: Never parse raw errors inline: Use a centralized helper like reduceErrors() to parse page errors, field errors, and Aura exceptions.
+Server-side hygiene: Always wrap Apex logic in try/catch and rethrow as AuraHandledException.
+UX alignment: Use ShowToastEvent for asynchronous actions, inline alerts for failed page loads, and setCustomValidity() for field errors.
+Resilience: Implement errorCallback(error, stack) in parent components as an error boundary to prevent UI crashes.
+
+Ques31:
+Ans31: Prefer LDS (Lightning Data Service) over Custom Apex:
+Use standard wire adapters (getRecord, getFieldValue, updateRecord) from lightning/uiRecordApi whenever possible.
+Why: LDS provides automatic client-side caching, sharing data across components on the same page, and eliminates unnecessary Apex controllers and server round-trips.
+
+Never return full sObjects with 50 unused fields from Apex. Return custom Apex wrappers containing only the exact fields the UI displays.
+Use @wire for reactive reads that adapt automatically when parameters change (e.g., '$recordId'). Reserve imperative Apex strictly for DML, on-demand operations 
+(button clicks), or dynamic search queries.
+Do not render hundreds of DOM nodes with standard <template for:each>.
+Use <lightning-datatable> with enable-infinite-loading or implement pagination to keep the DOM light.
+Keep Getters Pure and Fast:
+Avoid heavy computations, deep cloning, or array iterations (.filter(), .map(), .sort()) inside getters. Getters run on every reconciliation cycle. 
+Compute state once when data arrives and cache it in a property.
+
+Lifecycle Hooks & Resource Management
+No DOM Access in connectedCallback():
+The component DOM is not yet rendered in connectedCallback(). Perform data initialization and event subscriptions here, but leave DOM manipulations to renderedCallback().
+
+Guard renderedCallback():
+renderedCallback() executes after every render cycle. Always use a boolean flag (e.g., hasRendered) to prevent duplicate executions (such as running loadScript multiple times).
+
+Always Unsubscribe in disconnectedCallback():
+Unsubscribe from Lightning Message Channel (unsubscribe()), Platform Events (empApi), and remove window event listeners (resize, scroll) to prevent memory leaks.
+
+Implement errorCallback(error, stack):
+Use errorCallback in parent/container components as an Error Boundary to gracefully display a fallback error UI instead of crashing the entire page.
