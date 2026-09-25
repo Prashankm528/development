@@ -451,3 +451,85 @@ d. Third-Party Library Bloat & Static Resources
 The Root Cause: Loading large external JS/CSS bundles (e.g., full Chart.js, D3.js, Leaflet) synchronously in renderedCallback() using loadScript on every render.
 The Fix:
 Load Once Guard: Always use a boolean guard (hasInitialized) so loadScript or loadStyle only executes once in the lifecycle.
+
+write a program in APex nsuch that when a account is inserte , contact and opportuinity should also get insert, howver if contacts fail, opportunity should insert.
+how to log error for failed records?
+
+public with sharing class AccountTriggerHandler {
+
+    public static void handleAfterInsert(List<Account> newAccounts) {
+        List<Contact> contactsToInsert = new List<Contact>();
+        List<Opportunity> oppsToInsert = new List<Opportunity>();
+
+        // 1. Prepare child records
+        for (Account acc : newAccounts) {
+            // Child Contact
+            contactsToInsert.add(new Contact(
+                AccountId = acc.Id,
+                LastName = acc.Name + ' Primary Contact'
+                // Add any required or intentionally testable fields here
+            ));
+
+            // Child Opportunity
+            oppsToInsert.add(new Opportunity(
+                AccountId = acc.Id,
+                Name = acc.Name + ' - Initial Deal',
+                StageName = 'Prospecting',
+                CloseDate = Date.today().addDays(30)
+            ));
+        }
+
+        // 2. Insert Contacts with partial success enabled (allOrNone = false)
+        if (!contactsToInsert.isEmpty()) {
+            List<Database.SaveResult> contactResults = Database.insert(contactsToInsert, false);
+            logErrors('Contact', contactResults);
+        }
+
+        // 3. Insert Opportunities independently
+        // This executes even if one or all contacts above failed
+        if (!oppsToInsert.isEmpty()) {
+            List<Database.SaveResult> oppResults = Database.insert(oppsToInsert, false);
+            logErrors('Opportunity', oppResults);
+        }
+    }
+
+    // Helper method to inspect and log errors without rolling back the transaction
+    private static void logErrors(String objectType, List<Database.SaveResult> results) {
+        List<Integration_Log__c> errorLogs = new List<Integration_Log__c>();
+
+        for (Integer i = 0; i < results.size(); i++) {
+            Database.SaveResult sr = results[i];
+            if (!sr.isSuccess()) {
+                for (Database.Error err : sr.getErrors()) {
+                    System.debug(LoggingLevel.ERROR, 
+                        'Failed to insert ' + objectType + ': ' + 
+                        err.getStatusCode() + ' - ' + err.getMessage()
+                    );
+                    
+                    // Optional: Persist to a custom Error Log object for auditing
+                    /*
+                    errorLogs.add(new Integration_Log__c(
+                        Error_Message__c = objectType + ' failure: ' + err.getMessage(),
+                        Status_Code__c = (Decimal) err.getStatusCode()
+                    ));
+                    */
+                }
+            }
+        }
+
+        /*
+        if (!errorLogs.isEmpty()) {
+            Database.insert(errorLogs, false);
+        }
+        */
+    }
+}
+
+Ques 29: difference between Querylocator and iterable in batch class
+Ans 29: Feature	                       Database.QueryLocator	                                   Iterable (Iterable<sObject> or Iterable<CustomClass>)
+Max Record Limit	                      Up to 50 million records	                               Up to 50,000 records (governed by standard SOQL query limit)
+Governor Limit Impact	      Bypasses the standard 50,000 SOQL row limit	                            Consumes normal SOQL rows against the 50,000 limit
+Data Source Supported	           Only direct SOQL queries on sObjects	                   Any collection: SOQL, REST Callouts, In-memory objects, CSV rows, wrappers
+Data Types Handled	        Standard & Custom Salesforce sObjects only	            sObjects, Primitive types (String, Integer), or Custom Apex Wrapper classes
+Custom Filter Logic	   Limited to standard SOQL WHERE clause capabilities	            Can run complex Apex logic to filter/transform items before passing to execute()
+Heap Size Risk	      Low (server-side cursor streams records chunk-by-chunk)	         Higher (loading full collections into memory can breach heap limits)
