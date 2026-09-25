@@ -428,4 +428,26 @@ Non-technical stakeholders believe what they can see. Offer a quick demonstratio
 What to say:
 "As an architect in a client-facing role, I translate technical constraints into business realities. Non-technical clients care about three things: 
 user adoption, system reliability, and cost. When a requested design will cause future bottlenecks, I first validate their business objective, use a practical operational analogy 
-to explain the risk—like system freezing during peak hours—and then present a scalable alternative that achieves the exact same business result. If there's still hesitation, I build a quick POC to show them the real-time user experience, which almost always secures their buy-in."
+to explain the risk—like system freezing during peak hours—and then present a scalable alternative that achieves the exact same business result. 
+If there's still hesitation, I build a quick POC to show them the real-time user experience, which almost always secures their buy-in."
+
+Ques 27: A lwc component, if the page is heaviliy loaded and is rendering very slowly, what would be the reason and how to counter it.
+An27 : a.Rendering large collections using standard <template for:each> or <lightning-datatable> with hundreds or thousands of rows forces the browser to create,
+style, and calculate layout for thousands of DOM nodes at once.
+The Fix:
+Virtual Scrolling / Pagination: Render only the visible viewport (e.g., 20–30 records) and dynamically load more as the user scrolls (infinite scroll) or paginate.
+enable-infinite-loading in Datatable: Use lightning-datatable with infinite loading and onloadmore rather than loading all records into DOM memory.
+Lazy DOM Instantiation: Use <template lwc:if={isVisible}> to defer rendering tabs, modals, accordions, and secondary cards until the user explicitly expands or clicks them.
+
+b. eturning huge JSON payloads with unnecessary fields, nested relationships, and large unindexed data sets via @wire or imperative Apex.
+only neccessary field should be queried, caching should be enabled .i.e. Cachable=true.
+
+c.Modifying reactive @track properties or state variables inside getters, wire adapters, or loops triggers repeated reconciliation and 
+re-rendering of the component's virtual DOM.
+Avoid Complex Getters: Getters execute every time any reactive property in the component updates. Never put array operations (.filter(), .map(), .sort()), object cloning, or calculations inside getters—compute those once when data arrives and cache the result in a property.
+Immutable Mutation Patterns: Avoid mutating deeply nested objects in loops. Clone and assign them once (this.data = [...updatedList]) so the LWC engine runs a single reconciliation cycle.
+
+d. Third-Party Library Bloat & Static Resources
+The Root Cause: Loading large external JS/CSS bundles (e.g., full Chart.js, D3.js, Leaflet) synchronously in renderedCallback() using loadScript on every render.
+The Fix:
+Load Once Guard: Always use a boolean guard (hasInitialized) so loadScript or loadStyle only executes once in the lifecycle.
